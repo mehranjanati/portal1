@@ -1,10 +1,12 @@
 backend:
   name: github
-  repo: your-username/your-repo # Replace with the actual repository
+  repo: mehranjanati/portal1
   branch: main
-  site_domain: portal.nexus.io
+  site_domain: localhost:5173
 
-local_backend: true
+# Enable local backend
+local_backend:
+  url: http://localhost:5173/admin/
 
 media_folder: "static/assets/uploads"
 public_folder: "/assets/uploads"
