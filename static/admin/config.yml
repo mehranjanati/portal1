@@ -1,0 +1,48 @@
+backend:
+  name: github
+  repo: your-username/your-repo # Replace with the actual repository
+  branch: main
+  site_domain: portal.nexus.io
+
+local_backend: true
+
+media_folder: "static/assets/uploads"
+public_folder: "/assets/uploads"
+
+title: "Nexus Portal CMS"
+
+collections:
+  - name: "system"
+    label: "System Configuration"
+    files:
+      - name: "dashboard"
+        label: "Dashboard Settings"
+        file: "src/data/dashboard.json"
+        fields:
+          - { label: "Welcome Message", name: "welcome_message", widget: "string", default: "Real-time status of your Super Node services." }
+          - { label: "Maintenance Mode", name: "maintenance_mode", widget: "boolean", default: false }
+
+  - name: "announcements"
+    label: "Announcements"
+    folder: "src/data/announcements"
+    create: true
+    slug: "{{slug}}"
+    extension: "json"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Date", name: "date", widget: "datetime" }
+      - { label: "Type", name: "type", widget: "select", options: ["info", "warning", "success"] }
+      - { label: "Body", name: "body", widget: "markdown" }
+
+  - name: "agents"
+    label: "WASM Agents"
+    folder: "src/data/agents"
+    create: true
+    slug: "{{slug}}"
+    extension: "json"
+    fields:
+      - { label: "Agent Name", name: "name", widget: "string" }
+      - { label: "WASM URL", name: "wasm_url", widget: "string", hint: "URL to the compiled agent code" }
+      - { label: "Capabilities", name: "capabilities", widget: "list", summary: "{{fields.name}}" }
+      - { label: "Auto Start", name: "auto_start", widget: "boolean", default: true }
+
