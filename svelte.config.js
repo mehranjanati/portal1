@@ -13,6 +13,9 @@ const config = {
         }),
         paths: {
             base: process.argv.includes('dev') ? '' : '/portal1'
+        },
+        prerender: {
+            handleMissingId: 'ignore'
         }
     }
 };
