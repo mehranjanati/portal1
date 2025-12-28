@@ -8,11 +8,13 @@ const config = {
     preprocess: vitePreprocess(),
 
     kit: {
+        appDir: 'internal',
         adapter: adapter({
             fallback: '404.html'
         }),
         paths: {
-            base: process.argv.includes('dev') ? '' : '/portal1'
+            base: process.argv.includes('dev') ? '' : '/portal1',
+            relative: false
         },
         prerender: {
             handleMissingId: 'ignore'
