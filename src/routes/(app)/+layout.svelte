@@ -46,6 +46,15 @@
             >
                 <span class="opacity-70">🤖</span> My Agents
             </a>
+            <a
+                href="/marketplace"
+                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-[#1a1a1a] {$page
+                    .url.pathname === '/marketplace'
+                    ? 'text-white bg-[#1a1a1a]'
+                    : 'text-[#a1a1aa]'}"
+            >
+                <span class="opacity-70">🛍️</span> Marketplace
+            </a>
             <div class="pt-4 pb-2 px-3">
                 <p
                     class="text-[10px] uppercase font-bold text-[#52525b] tracking-wider"
