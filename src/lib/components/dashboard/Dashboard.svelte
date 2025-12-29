@@ -1,182 +1,245 @@
 <script lang="ts">
-  import BackendStatusIndicator from "$lib/components/common/BackendStatusIndicator.svelte";
   import dashboardConfig from "../../../data/dashboard.json";
 
-  // Load announcements from CMS-generated JSON files
+  // Mock Feed Data
+  let feedItems = [
+    {
+      id: 1,
+      type: "agent_log",
+      agentName: "AlphaTrader_V2",
+      content: "Executed limit buy order for 15 ETH @ $2,240. Slippage: 0.01%.",
+      time: "Just now",
+      status: "success",
+    },
+    {
+      id: 2,
+      type: "social",
+      author: "Sarah K. (Product)",
+      content:
+        "Just deployed the new marketing agent Swarm. It is already optimizing ad spend on Farcaster frames. 🚀 #AI #Marketing",
+      time: "12 mins ago",
+      avatar: "S",
+    },
+    {
+      id: 3,
+      type: "system",
+      title: "Protocol Update",
+      content:
+        "New governance proposal is live on Snapshot. Voting ends in 24h.",
+      time: "1 hour ago",
+      priority: "high",
+    },
+  ];
+
+  // Load announcements (keep existing logic but map to feed)
   const announcementModules = import.meta.glob(
     "../../../data/announcements/*.json",
     { eager: true },
   );
-  const announcements = Object.values(announcementModules)
-    .map((mod: any) => mod.default || mod)
-    .sort(
-      (a: any, b: any) =>
-        new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
 
-  let matrixStatus: any = "connecting";
-  let liveKitStatus: any = "connecting";
-
-  // Simulate connection
-  setTimeout(() => {
-    matrixStatus = "connected";
-  }, 2000);
-  setTimeout(() => {
-    liveKitStatus = "connected";
-  }, 3500);
-
-  function timeAgo(dateString: string) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (seconds < 60) return "just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} mins ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hours ago`;
-    return date.toLocaleDateString();
-  }
+  // Merge CMS announcements into feed
+  Object.values(announcementModules).forEach((mod: any) => {
+    const item = mod.default || mod;
+    feedItems.push({
+      id: Math.random(),
+      type: "system",
+      title: item.title,
+      content: item.body || item.title,
+      time: new Date(item.date).toLocaleDateString(),
+      priority: item.type === "warning" ? "high" : "normal",
+    });
+  });
 </script>
 
-<div class="p-8 space-y-8 flex-1 overflow-y-auto">
-  <!-- Header -->
-  <header class="flex items-center justify-between">
-    <div>
-      <h2 class="text-3xl font-bold tracking-tight">System Dashboard</h2>
-      <p class="text-white/50 mt-1">{dashboardConfig.welcome_message}</p>
-    </div>
+<div class="max-w-3xl mx-auto py-8 px-6 space-y-6">
+  <!-- "What's Happening" / Command Bar -->
+  <div class="p-4 rounded-xl border border-[#1f1f1f] bg-[#111]">
     <div class="flex gap-4">
-      <BackendStatusIndicator name="Matrix" status={matrixStatus} />
-      <BackendStatusIndicator name="LiveKit" status={liveKitStatus} />
-    </div>
-  </header>
-
-  <!-- Widget Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <!-- Matrix Status Widget -->
-    <div
-      class="bg-nexus-card border border-white/10 p-6 rounded-2xl flex flex-col gap-4"
-    >
-      <div class="flex items-center justify-between">
-        <span class="text-2xl">💬</span>
-        <span class="text-xs font-mono text-white/30 uppercase"
-          >Secure Chat</span
-        >
-      </div>
-      <div>
-        <h3 class="text-lg font-semibold">Communication Hub</h3>
-        <p class="text-sm text-white/50 mt-1">
-          Connected to Matrix Mesh. 12 active rooms.
-        </p>
-      </div>
-      <a
-        href="#/chat"
-        class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-lg bg-nexus-accent text-black font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
-      >
-        Open Messages
-      </a>
-    </div>
-
-    <!-- LiveKit Status Widget -->
-    <div
-      class="bg-nexus-card border border-white/10 p-6 rounded-2xl flex flex-col gap-4"
-    >
-      <div class="flex items-center justify-between">
-        <span class="text-2xl">⚡</span>
-        <span class="text-xs font-mono text-white/30 uppercase">Real-time</span>
-      </div>
-      <div>
-        <h3 class="text-lg font-semibold">Session Manager</h3>
-        <p class="text-sm text-white/50 mt-1">
-          LiveKit instance ready. 0 active meetups.
-        </p>
-      </div>
-      <a
-        href="#/meet"
-        class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-lg bg-white text-black font-bold text-sm hover:bg-white/90 transition-all"
-      >
-        Start Session
-      </a>
-    </div>
-
-    <!-- App Builder Launcher -->
-    <div
-      class="bg-gradient-to-br from-indigo-900/40 to-nexus-bg border border-indigo-500/30 p-6 rounded-2xl flex flex-col gap-4 relative overflow-hidden group"
-    >
       <div
-        class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all"
+        class="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 shrink-0"
       ></div>
-      <div class="flex items-center justify-between">
-        <span class="text-2xl">🛠️</span>
-        <span class="text-xs font-mono text-indigo-400 uppercase font-bold"
-          >WebContainers</span
+      <div class="flex-1">
+        <input
+          type="text"
+          placeholder="Broadcast update or initialize agent..."
+          class="w-full bg-transparent text-white placeholder-[#52525b] focus:outline-none text-sm py-2"
+        />
+        <div
+          class="flex items-center justify-between mt-3 pt-3 border-t border-[#1f1f1f]"
         >
+          <div class="flex gap-2">
+            <button
+              class="p-1.5 text-[#a1a1aa] hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
+              title="Attach Media"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><rect
+                  width="18"
+                  height="18"
+                  x="3"
+                  y="3"
+                  rx="2"
+                  ry="2"
+                /><circle cx="9" cy="9" r="2" /><path
+                  d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"
+                /></svg
+              >
+            </button>
+            <button
+              class="p-1.5 text-[#a1a1aa] hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
+              title="Trigger Agent"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path
+                  d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
+                /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line
+                  x1="12"
+                  x2="12"
+                  y1="19"
+                  y2="22"
+                /></svg
+              >
+            </button>
+          </div>
+          <button
+            class="px-4 py-1.5 bg-white text-black text-xs font-semibold rounded hover:bg-gray-200 transition-colors"
+          >
+            Post
+          </button>
+        </div>
       </div>
-      <div>
-        <h3 class="text-lg font-semibold">App Builder</h3>
-        <p class="text-sm text-white/50 mt-1">
-          Build and deploy new node modules in isolation.
-        </p>
-      </div>
-      <button
-        class="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-500 transition-all"
-      >
-        Launch IDE
-      </button>
     </div>
   </div>
 
-  <!-- Recent Activity Section -->
-  <section class="mt-12">
-    <h3 class="text-xl font-bold mb-6">Recent Activity</h3>
-    <div
-      class="bg-nexus-card border border-white/10 rounded-2xl overflow-hidden"
+  <!-- Feed Divider -->
+  <div class="flex items-center gap-4 text-xs font-medium text-[#52525b]">
+    <span class="text-white">All Activity</span>
+    <span class="cursor-pointer hover:text-white transition-colors"
+      >Agent Logs</span
     >
-      <table class="w-full text-left">
-        <thead class="bg-white/5 border-b border-white/10">
-          <tr>
-            <th
-              class="px-6 py-3 text-xs font-semibold text-white/30 uppercase tracking-wider"
-              >Event</th
+    <span class="cursor-pointer hover:text-white transition-colors"
+      >Mentions</span
+    >
+  </div>
+
+  <!-- Feed Stream -->
+  <div class="space-y-4">
+    {#each feedItems as item}
+      {#if item.type === "agent_log"}
+        <!-- Agent Log Card -->
+        <div
+          class="p-4 rounded-xl border border-[#1f1f1f] bg-[#111]/50 hover:bg-[#111] transition-colors group"
+        >
+          <div class="flex items-start gap-4">
+            <div
+              class="w-10 h-10 rounded-lg bg-emerald-900/20 border border-emerald-900/50 flex items-center justify-center shrink-0"
             >
-            <th
-              class="px-6 py-3 text-xs font-semibold text-white/30 uppercase tracking-wider"
-              >Type</th
+              <span class="text-emerald-500 font-mono text-xs">LOG</span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-semibold text-white">
+                  {item.agentName}
+                </h4>
+                <span class="text-[10px] text-[#52525b]">{item.time}</span>
+              </div>
+              <p
+                class="text-sm text-[#a1a1aa] mt-1 font-mono text-xs leading-relaxed"
+              >
+                {item.content}
+              </p>
+            </div>
+          </div>
+        </div>
+      {:else if item.type === "social"}
+        <!-- Social Post Card -->
+        <div
+          class="p-4 rounded-xl border border-[#1f1f1f] hover:border-[#333] transition-colors"
+        >
+          <div class="flex items-start gap-4">
+            <div
+              class="w-10 h-10 rounded-full bg-blue-900/30 text-blue-400 flex items-center justify-center shrink-0 text-sm font-bold"
             >
-            <th
-              class="px-6 py-3 text-xs font-semibold text-white/30 uppercase tracking-wider"
-              >Time</th
-            >
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-white/5">
-          {#each announcements as item}
-            <tr class="hover:bg-white/5 transition-colors">
-              <td class="px-6 py-4 text-sm font-medium">{item.title}</td>
-              <td class="px-6 py-4 text-sm font-mono">
-                <span
-                  class:text-nexus-accent={item.type === "success"}
-                  class:text-yellow-400={item.type === "warning"}
-                  class:text-blue-400={item.type === "info"}
+              {item.avatar}
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-semibold text-white">{item.author}</h4>
+                <span class="text-[10px] text-[#52525b]">{item.time}</span>
+              </div>
+              <p class="text-sm text-gray-300 mt-2 leading-relaxed">
+                {item.content}
+              </p>
+
+              <!-- Post Actions -->
+              <div class="flex gap-6 mt-4">
+                <button
+                  class="flex items-center gap-2 text-[#52525b] hover:text-white text-xs group transition-colors"
                 >
-                  {item.type}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-sm text-white/40"
-                >{timeAgo(item.date)}</td
-              >
-            </tr>
-          {/each}
-          {#if announcements.length === 0}
-            <tr>
-              <td colspan="3" class="px-6 py-8 text-center text-white/30 italic"
-                >No recent activity</td
-              >
-            </tr>
-          {/if}
-        </tbody>
-      </table>
-    </div>
-  </section>
+                  <svg
+                    class="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    ><path
+                      d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
+                    /></svg
+                  >
+                  <span>Like</span>
+                </button>
+                <button
+                  class="flex items-center gap-2 text-[#52525b] hover:text-white text-xs group transition-colors"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    ><path
+                      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+                    /></svg
+                  >
+                  <span>Comment</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else}
+        <!-- System Alert -->
+        <div
+          class="p-3 rounded-lg border border-l-4 border-[#1f1f1f] bg-[#111] {item.priority ===
+          'high'
+            ? 'border-l-amber-500'
+            : 'border-l-blue-500'}"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-white">{item.title}</span>
+            <span class="text-[10px] text-[#52525b]">{item.time}</span>
+          </div>
+          <p class="text-xs text-[#a1a1aa] mt-1">{item.content}</p>
+        </div>
+      {/if}
+    {/each}
+  </div>
 </div>

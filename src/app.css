@@ -1,39 +1,72 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
 @import "tailwindcss";
 
-@theme {
-  --color-nexus-bg: #0a0a0a;
-  --color-nexus-card: #1a1a1a;
-  --color-nexus-accent: #00ffcc;
-}
-
 :root {
-  --nexus-bg: #0a0a0a;
-  --nexus-text: #ffffff;
-  --nexus-accent: #00ffcc;
+  /* Premium Dark Mode Token System */
+  --bg-app: #0a0a0a;
+  /* Deep Matte Charcoal */
+  --bg-panel: #111111;
+  /* Slightly lighter for cards/sidebars */
+  --bg-hover: #1a1a1a;
+  /* Subtle hover state */
+
+  --border-subtle: #1f1f1f;
+  /* Very refined borders */
+  --border-strong: #333333;
+  /* Active states / Focus */
+
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  /* Zinc-400 equivalent */
+  --text-tertiary: #52525b;
+  /* Zinc-600 */
+
+  --accent-primary: #ffffff;
+  /* Linear style often uses white as accent in dark mode */
+  --accent-brand: #3b82f6;
+  /* Professional Blue for links/actions */
+  --accent-success: #10b981;
+  /* Emerald-500 */
+  --accent-error: #ef4444;
+  /* Red-500 */
+
+  /* Spacing & Layout */
+  --sidebar-width: 260px;
+  --context-width: 320px;
+  --header-height: 60px;
 }
 
 body {
-  background-color: var(--nexus-bg);
-  color: var(--nexus-text);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   overflow: hidden;
+  /* App-like feel */
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Sveltia-like scrollbars */
+/* Scrollbar refinement */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  width: 6px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 4px;
+  background: var(--border-strong);
+  border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #444;
+/* Utility Utilities compatible with Tailwind */
+.border-b-subtle {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.border-r-subtle {
+  border-right: 1px solid var(--border-subtle);
+}
+
+.border-l-subtle {
+  border-left: 1px solid var(--border-subtle);
 }

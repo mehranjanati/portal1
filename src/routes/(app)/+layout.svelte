@@ -1,94 +1,175 @@
 <script lang="ts">
     import "../../app.css";
-    import { onMount } from "svelte";
-
-    let currentHash = "#/";
-
-    onMount(() => {
-        const handleHashChange = () => {
-            currentHash = window.location.hash || "#/";
-        };
-        window.addEventListener("hashchange", handleHashChange);
-        handleHashChange();
-        return () => window.removeEventListener("hashchange", handleHashChange);
-    });
+    import { page } from "$app/stores";
 </script>
 
 <div
-    class="flex h-screen w-screen overflow-hidden bg-nexus-bg text-white font-sans"
+    class="flex h-screen w-full bg-[#0a0a0a] text-white font-sans overflow-hidden"
 >
-    <!-- Sidebar -->
-    <aside class="w-64 bg-black/50 border-r border-white/10 flex flex-col">
-        <div class="p-6 flex items-center gap-3">
-            <div class="w-8 h-8 rounded bg-nexus-accent animate-pulse"></div>
-            <h1 class="text-xl font-bold tracking-tight">NEXUS PORTAL</h1>
+    <!-- LEFT SIDEBAR: Navigation -->
+    <aside
+        class="flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a]"
+        style="width: var(--sidebar-width);"
+    >
+        <!-- App Header (Logo) -->
+        <div class="h-[60px] flex items-center px-5 border-b border-[#1f1f1f]">
+            <div class="w-6 h-6 rounded bg-blue-500 mr-3"></div>
+            <span class="font-semibold text-sm tracking-wide">NEXUS</span>
         </div>
 
-        <nav class="flex-1 px-4 space-y-1">
-            <p
-                class="px-4 py-2 text-[10px] font-bold text-white/30 uppercase tracking-widest"
-            >
-                Core
-            </p>
+        <!-- Navigation Links -->
+        <nav class="flex-1 p-3 space-y-1">
             <a
                 href="#/"
-                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {currentHash ===
-                    '#/' || currentHash === ''
-                    ? 'bg-white/5 text-nexus-accent'
-                    : 'hover:bg-white/5 text-white/70'}"
+                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-[#1a1a1a] {$page
+                    .url.hash === '#/' || $page.url.hash === ''
+                    ? 'text-white bg-[#1a1a1a]'
+                    : 'text-[#a1a1aa]'}"
             >
-                <span class="text-lg">🏠</span> Dashboard
+                <span class="opacity-70">🏠</span> Home
             </a>
             <a
-                href="#/chat"
-                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {currentHash ===
-                '#/chat'
-                    ? 'bg-white/5 text-nexus-accent'
-                    : 'hover:bg-white/5 text-white/70'}"
+                href="#/network"
+                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-[#1a1a1a] {$page
+                    .url.hash === '#/network'
+                    ? 'text-white bg-[#1a1a1a]'
+                    : 'text-[#a1a1aa]'}"
             >
-                <span class="text-lg">💬</span> Communication
+                <span class="opacity-70">🌍</span> Network
             </a>
             <a
-                href="#/meet"
-                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {currentHash ===
-                '#/meet'
-                    ? 'bg-white/5 text-nexus-accent'
-                    : 'hover:bg-white/5 text-white/70'}"
+                href="#/agents"
+                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-[#1a1a1a] {$page
+                    .url.hash === '#/agents'
+                    ? 'text-white bg-[#1a1a1a]'
+                    : 'text-[#a1a1aa]'}"
             >
-                <span class="text-lg">🎥</span> Live Sessions
+                <span class="opacity-70">🤖</span> My Agents
             </a>
-
-            <p
-                class="px-4 py-2 mt-4 text-[10px] font-bold text-white/30 uppercase tracking-widest"
-            >
-                Management
-            </p>
+            <div class="pt-4 pb-2 px-3">
+                <p
+                    class="text-[10px] uppercase font-bold text-[#52525b] tracking-wider"
+                >
+                    Workspace
+                </p>
+            </div>
             <a
                 href="#/cms"
-                class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors {currentHash ===
-                '#/cms'
-                    ? 'bg-white/5 text-nexus-accent'
-                    : 'hover:bg-white/5 text-white/70'}"
+                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-[#1a1a1a] text-[#a1a1aa]"
             >
-                <span class="text-lg">🛠️</span> Node CMS
+                <span class="opacity-70">⚡</span> Node CMS
             </a>
         </nav>
 
-        <div class="p-4 border-t border-white/10">
-            <div class="flex items-center gap-3 p-3 rounded bg-white/5">
+        <!-- User Profile (Bottom) -->
+        <div class="p-4 border-t border-[#1f1f1f]">
+            <div class="flex items-center gap-3">
                 <div
-                    class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-nexus-accent"
+                    class="w-8 h-8 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600"
                 ></div>
-                <div>
-                    <p class="text-xs font-medium">Super Node</p>
-                    <p class="text-[10px] text-white/50">v1.0.0-alpha</p>
+                <div class="overflow-hidden">
+                    <p class="text-xs font-medium text-white truncat">
+                        Alex D.
+                    </p>
+                    <p class="text-[10px] text-[#52525b]">Pro Plan</p>
                 </div>
             </div>
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <slot />
+    <!-- CENTER (Main Content / Stream) -->
+    <main class="flex-1 flex flex-col min-w-0 bg-[#0a0a0a]">
+        <!-- Global Header (Search / Breadcrumbs) -->
+        <header
+            class="h-[60px] flex items-center justify-between px-6 border-b border-[#1f1f1f] shrink-0"
+        >
+            <div class="flex items-center text-sm text-[#52525b]">
+                <span>Workspace</span>
+                <span class="mx-2">/</span>
+                <span class="text-white">Stream</span>
+            </div>
+            <div class="flex gap-4">
+                <!-- Actions -->
+            </div>
+        </header>
+
+        <!-- Scrollable Content Area -->
+        <div class="flex-1 overflow-y-auto overflow-x-hidden relative">
+            <slot />
+        </div>
     </main>
+
+    <!-- RIGHT SIDEBAR: Context Panel (Agents / Meeting) -->
+    <aside
+        class="flex flex-col border-l border-[#1f1f1f] bg-[#0a0a0a]"
+        style="width: var(--context-width);"
+    >
+        <div class="h-[60px] flex items-center px-5 border-b border-[#1f1f1f]">
+            <span class="font-medium text-sm">Active Agents</span>
+        </div>
+
+        <div class="flex-1 p-4 space-y-4 overflow-y-auto">
+            <!-- Mock Agent Card 1 -->
+            <div
+                class="p-3 rounded-lg border border-[#1f1f1f] bg-[#111] hover:border-[#333] transition-colors cursor-pointer group"
+            >
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                        <span class="text-xs font-medium text-white"
+                            >AlphaTrader_V2</span
+                        >
+                    </div>
+                    <span
+                        class="text-[10px] text-[#52525b] group-hover:text-white transition-colors"
+                        >2m ago</span
+                    >
+                </div>
+                <p class="text-[11px] text-[#a1a1aa] leading-relaxed">
+                    Executed arbitrage strategy on ETH-USDC pair. Net profit:
+                    +0.45%.
+                </p>
+            </div>
+
+            <!-- Mock Agent Card 2 -->
+            <div
+                class="p-3 rounded-lg border border-[#1f1f1f] bg-[#111] hover:border-[#333] transition-colors cursor-pointer group"
+            >
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span class="text-xs font-medium text-white"
+                            >ContentGen_X</span
+                        >
+                    </div>
+                </div>
+                <p class="text-[11px] text-[#a1a1aa] leading-relaxed">
+                    Drafting newsletter for 'Web3 Trends'. Waiting for final
+                    key...
+                </p>
+            </div>
+
+            <!-- Marketplace Teaser -->
+            <div class="pt-6 border-t border-[#1f1f1f]">
+                <h4
+                    class="text-xs font-bold text-[#52525b] uppercase mb-3 tracking-wider"
+                >
+                    Marketplace
+                </h4>
+                <div
+                    class="flex items-center gap-3 p-2 rounded hover:bg-[#1a1a1a] cursor-pointer"
+                >
+                    <div
+                        class="w-8 h-8 rounded bg-indigo-900/30 text-indigo-400 flex items-center justify-center text-xs font-bold"
+                    >
+                        DA
+                    </div>
+                    <div>
+                        <p class="text-xs text-white">DataAnalyzer</p>
+                        <p class="text-[10px] text-[#52525b]">$5/mo</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
 </div>
