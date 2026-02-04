@@ -1,6 +1,7 @@
 <script lang="ts">
     import "../../app.css";
     import { page } from "$app/stores";
+    import { base } from "$app/paths";
 </script>
 
 <div
@@ -47,9 +48,10 @@
                 <span class="opacity-70">🤖</span> My Agents
             </a>
             <a
-                href="/marketplace"
+                href="{base}/marketplace"
                 class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-[#1a1a1a] {$page
-                    .url.pathname === '/marketplace'
+                    .url.pathname ===
+                base + '/marketplace'
                     ? 'text-white bg-[#1a1a1a]'
                     : 'text-[#a1a1aa]'}"
             >
