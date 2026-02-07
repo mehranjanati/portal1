@@ -134,7 +134,7 @@ export interface Comment {
 // Service Status Types
 // ============================================================================
 
-export type ServiceName = 'matrix' | 'livekit' | 'blockchain' | 'api';
+export type ServiceName = 'openclaw' | 'livekit' | 'blockchain' | 'api';
 export type ServiceStatus = 'operational' | 'degraded' | 'down' | 'maintenance';
 
 export interface ServiceHealth {
@@ -147,22 +147,22 @@ export interface ServiceHealth {
 }
 
 // ============================================================================
-// Communication Types (Matrix)
+// Communication Types (OpenClaw)
 // ============================================================================
 
-export interface MatrixRoom {
+export interface OpenClawRoom {
     id: string;
     name: string;
     topic?: string;
     avatar?: string;
     memberCount: number;
     unreadCount: number;
-    lastMessage?: MatrixMessage;
+    lastMessage?: OpenClawMessage;
     encrypted: boolean;
     isDirect: boolean;
 }
 
-export interface MatrixMessage {
+export interface OpenClawMessage {
     id: string;
     roomId: string;
     sender: User;

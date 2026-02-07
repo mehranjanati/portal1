@@ -1,6 +1,6 @@
 {
-    "name": "Matrix Translator",
-    "wasm_url": "https://example.com/matrix-translator.wasm",
+    "name": "OpenClaw Translator",
+    "wasm_url": "https://example.com/openclaw-translator.wasm",
     "capabilities": [
         "chat-read",
         "chat-write",
