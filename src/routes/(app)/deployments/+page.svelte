@@ -66,7 +66,7 @@
         </div>
     {:else if deployments.length === 0}
         <div
-            class="flex flex-col items-center justify-center h-64 border border-dashed border-[#1f1f1f] rounded-xl text-[#52525b]"
+            class="flex flex-col items-center justify-center h-64 border border-dashed border-[#1f1f1f] rounded-xl text-[#a1a1aa]"
         >
             <Globe size={48} class="mb-4 opacity-50" />
             <p>No deployments found.</p>
@@ -144,7 +144,7 @@
                         </a>
 
                         <div
-                            class="mt-4 pt-4 border-t border-[#1f1f1f] flex items-center justify-between text-[10px] text-[#52525b]"
+                            class="mt-4 pt-4 border-t border-[#1f1f1f] flex items-center justify-between text-[10px] text-[#a1a1aa]"
                         >
                             <div class="flex items-center gap-1.5">
                                 <Clock size={10} />

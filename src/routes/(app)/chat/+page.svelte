@@ -205,7 +205,7 @@
                         <span class="text-xs font-bold text-[#e4e4e7]"
                             >{msg.role === "user" ? "You" : "VoltAgent"}</span
                         >
-                        <span class="text-[10px] text-[#52525b]"
+                        <span class="text-[10px] text-[#a1a1aa]"
                             >{msg.timestamp.toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
@@ -277,7 +277,7 @@
                                         </div>
                                         <span
                                             class="text-xs {status === 'pending'
-                                                ? 'text-[#52525b]'
+                                                ? 'text-[#a1a1aa]'
                                                 : 'text-[#e4e4e7]'}"
                                         >
                                             {step.label}
@@ -334,13 +334,13 @@
                     class="p-4 rounded-2xl bg-[#111] border border-[#1f1f1f] rounded-tl-none flex items-center gap-1"
                 >
                     <div
-                        class="w-1.5 h-1.5 bg-[#52525b] rounded-full animate-bounce [animation-delay:-0.3s]"
+                        class="w-1.5 h-1.5 bg-[#a1a1aa] rounded-full animate-bounce [animation-delay:-0.3s]"
                     ></div>
                     <div
-                        class="w-1.5 h-1.5 bg-[#52525b] rounded-full animate-bounce [animation-delay:-0.15s]"
+                        class="w-1.5 h-1.5 bg-[#a1a1aa] rounded-full animate-bounce [animation-delay:-0.15s]"
                     ></div>
                     <div
-                        class="w-1.5 h-1.5 bg-[#52525b] rounded-full animate-bounce"
+                        class="w-1.5 h-1.5 bg-[#a1a1aa] rounded-full animate-bounce"
                     ></div>
                 </div>
             </div>
@@ -355,7 +355,7 @@
                 on:keydown={(e) => e.key === "Enter" && handleSend()}
                 type="text"
                 placeholder="Describe a website to generate..."
-                class="w-full bg-[#111] border border-[#1f1f1f] text-white text-sm rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder:text-[#52525b]"
+                class="w-full bg-[#111] border border-[#1f1f1f] text-white text-sm rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all placeholder:text-[#a1a1aa]"
             />
             <button
                 on:click={handleSend}
@@ -365,7 +365,7 @@
                 <Send size={16} />
             </button>
         </div>
-        <p class="text-[10px] text-center text-[#52525b] mt-3">
+        <p class="text-[10px] text-center text-[#a1a1aa] mt-3">
             Powered by VoltAgent & Temporal. Commands: "Generate website",
             "Deploy app".
         </p>

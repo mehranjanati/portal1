@@ -159,7 +159,7 @@
                             {/if}
                         </div>
                         <div
-                            class="flex items-center gap-4 text-xs text-white/40"
+                            class="flex items-center gap-4 text-xs text-white/70"
                         >
                             <div class="flex items-center gap-1">
                                 <Star class="w-3 h-3" />
