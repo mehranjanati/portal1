@@ -3,9 +3,19 @@
     import { page } from "$app/stores";
     import { base } from "$app/paths";
 
+    interface Agent {
+        id: string;
+        name: string;
+        status: string;
+        roi: string;
+        logs: string;
+    }
+
+    let { children } = $props();
+
     let isMobileMenuOpen = $state(false);
 
-    let agents = $state([
+    let agents = $state<Agent[]>([
         {
             id: "1",
             name: "AlphaTrader_V2",
@@ -22,7 +32,7 @@
         },
     ]);
 
-    function togglePause(agent: any) {
+    function togglePause(agent: Agent) {
         if (agent.status === "Paused") {
             agent.status = "Active";
         } else {
@@ -34,10 +44,10 @@
         isMobileMenuOpen = false;
     }
 
-    let selectedAgent = $state(null);
+    let selectedAgent = $state<Agent | null>(null);
     let showAgentModal = $state(false);
 
-    function openAgentModal(agent: any) {
+    function openAgentModal(agent: Agent) {
         selectedAgent = agent;
         showAgentModal = true;
     }
@@ -226,7 +236,7 @@
 
         <!-- Scrollable Content Area -->
         <div class="flex-1 overflow-y-auto overflow-x-hidden relative">
-            <slot />
+            {@render children()}
         </div>
     </main>
 
@@ -245,9 +255,12 @@
             {#each agents as agent}
                 <div
                     data-testid="agent-card"
-                    class="p-3 rounded-lg border border-[#1f1f1f] bg-[#111] hover:border-[#333] transition-colors cursor-pointer group"
-                    role="article"
+                    class="w-full text-left p-3 rounded-lg border border-[#1f1f1f] bg-[#111] hover:border-[#333] transition-colors cursor-pointer group block"
+                    role="button"
+                    tabindex="0"
                     onclick={() => openAgentModal(agent)}
+                    onkeydown={(e) =>
+                        e.key === "Enter" && openAgentModal(agent)}
                 >
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
@@ -496,7 +509,7 @@
                 <div class="flex justify-end gap-3 pt-4">
                     <button
                         onclick={() => {
-                            togglePause(selectedAgent);
+                            if (selectedAgent) togglePause(selectedAgent);
                             showAgentModal = false;
                         }}
                         class="px-6 py-2.5 rounded-xl border border-[#1f1f1f] hover:bg-[#1a1a1a] transition-all font-bold"
