@@ -1,4 +1,4 @@
-export type McpServerType = 'ui' | 'data' | 'devops' | 'system' | 'ai';
+export type McpServerType = 'ui' | 'data' | 'devops' | 'system' | 'ai' | 'server' | 'tool';
 
 export interface McpTool {
     name: string;
@@ -37,4 +37,5 @@ export interface McpServer {
     tags: string[];
     installed: boolean;
     status?: 'connected' | 'disconnected' | 'error' | 'connecting';
+    downloads?: number;
 }

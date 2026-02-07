@@ -32,14 +32,15 @@ vi.mock('$app/stores', () => ({
 }));
 
 // Global test utilities
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+// Global test utilities
+vi.stubGlobal('ResizeObserver', vi.fn().mockImplementation(() => ({
     observe: vi.fn(),
     unobserve: vi.fn(),
     disconnect: vi.fn(),
-}));
+})));
 
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+vi.stubGlobal('IntersectionObserver', vi.fn().mockImplementation(() => ({
     observe: vi.fn(),
     unobserve: vi.fn(),
     disconnect: vi.fn(),
-}));
+})));
