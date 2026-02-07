@@ -30,6 +30,10 @@
         }
     }
 
+    function closeMobileMenu() {
+        isMobileMenuOpen = false;
+    }
+
     let selectedAgent = $state(null);
     let showAgentModal = $state(false);
 
