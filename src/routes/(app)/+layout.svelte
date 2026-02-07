@@ -160,6 +160,7 @@
         <div class="flex-1 p-4 space-y-4 overflow-y-auto">
             <!-- Mock Agent Card 1 -->
             <div
+                data-testid="agent-card"
                 class="p-3 rounded-lg border border-[#1f1f1f] bg-[#111] hover:border-[#333] transition-colors cursor-pointer group"
             >
                 <div class="flex items-center justify-between mb-2">
@@ -169,19 +170,29 @@
                             >AlphaTrader_V2</span
                         >
                     </div>
-                    <span
-                        class="text-[10px] text-[#a1a1aa] group-hover:text-white transition-colors"
-                        >2m ago</span
-                    >
+                    <div class="flex items-center gap-2">
+                        <span
+                            data-testid="agent-status"
+                            class="text-[10px] text-emerald-500 uppercase font-bold"
+                            >Active</span
+                        >
+                        <button
+                            data-testid="agent-pause"
+                            class="p-1 hover:text-white text-[#a1a1aa]"
+                            title="Pause">⏸</button
+                        >
+                    </div>
                 </div>
                 <p class="text-[11px] text-[#a1a1aa] leading-relaxed">
-                    Executed arbitrage strategy on ETH-USDC pair. Net profit:
-                    +0.45%.
+                    Executed arbitrage strategy on ETH-USDC pair. Net profit: <span
+                        data-testid="agent-roi">+0.45%</span
+                    >
                 </p>
             </div>
 
             <!-- Mock Agent Card 2 -->
             <div
+                data-testid="agent-card"
                 class="p-3 rounded-lg border border-[#1f1f1f] bg-[#111] hover:border-[#333] transition-colors cursor-pointer group"
             >
                 <div class="flex items-center justify-between mb-2">
@@ -189,6 +200,18 @@
                         <div class="w-2 h-2 rounded-full bg-amber-500"></div>
                         <span class="text-xs font-medium text-white"
                             >ContentGen_X</span
+                        >
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span
+                            data-testid="agent-status"
+                            class="text-[10px] text-amber-500 uppercase font-bold"
+                            >Idle</span
+                        >
+                        <button
+                            data-testid="agent-pause"
+                            class="p-1 hover:text-white text-[#a1a1aa]"
+                            title="Pause">⏸</button
                         >
                     </div>
                 </div>
