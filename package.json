@@ -21,6 +21,7 @@
 		"deploy": "npm run build && gh-pages -d build"
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "^4.11.1",
 		"@internationalized/date": "^3.10.1",
 		"@lucide/svelte": "^0.562.0",
 		"@playwright/test": "^1.58.2",
