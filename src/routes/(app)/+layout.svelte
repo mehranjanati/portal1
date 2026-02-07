@@ -9,18 +9,20 @@
 >
     <!-- LEFT SIDEBAR: Navigation -->
     <aside
+        data-testid="left-sidebar"
         class="flex flex-col border-r border-[#1f1f1f] bg-[#0a0a0a]"
         style="width: var(--sidebar-width);"
     >
         <!-- App Header (Logo) -->
         <div class="h-[60px] flex items-center px-5 border-b border-[#1f1f1f]">
             <div class="w-6 h-6 rounded bg-blue-500 mr-3"></div>
-            <span class="font-semibold text-sm tracking-wide">NEXUS</span>
+            <h1 class="font-semibold text-sm tracking-wide">NEXUS</h1>
         </div>
 
         <!-- Navigation Links -->
-        <nav class="flex-1 p-3 space-y-1">
+        <nav data-testid="main-nav" class="flex-1 p-3 space-y-1">
             <a
+                data-testid="nav-dashboard"
                 href="#/"
                 class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-[#1a1a1a] {$page
                     .url.hash === '#/' || $page.url.hash === ''
@@ -39,6 +41,7 @@
                 <span class="opacity-70">🌍</span> Network
             </a>
             <a
+                data-testid="nav-agents"
                 href="#/agents"
                 class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-[#1a1a1a] {$page
                     .url.hash === '#/agents'
@@ -93,13 +96,17 @@
         </nav>
 
         <!-- User Profile (Bottom) -->
-        <div class="p-4 border-t border-[#1f1f1f]">
+        <div data-testid="user-profile" class="p-4 border-t border-[#1f1f1f]">
             <div class="flex items-center gap-3">
                 <div
+                    data-testid="user-avatar"
                     class="w-8 h-8 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600"
                 ></div>
                 <div class="overflow-hidden">
-                    <p class="text-xs font-medium text-white truncat">
+                    <p
+                        data-testid="username"
+                        class="text-xs font-medium text-white truncat"
+                    >
                         Alex D.
                     </p>
                     <p class="text-[10px] text-[#52525b]">Pro Plan</p>
@@ -109,7 +116,10 @@
     </aside>
 
     <!-- CENTER (Main Content / Stream) -->
-    <main class="flex-1 flex flex-col min-w-0 bg-[#0a0a0a]">
+    <main
+        data-testid="center-feed"
+        class="flex-1 flex flex-col min-w-0 bg-[#0a0a0a]"
+    >
         <!-- Global Header (Search / Breadcrumbs) -->
         <header
             class="h-[60px] flex items-center justify-between px-6 border-b border-[#1f1f1f] shrink-0"
@@ -121,6 +131,13 @@
             </div>
             <div class="flex gap-4">
                 <!-- Actions -->
+                <div
+                    data-testid="wallet-balance"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded bg-[#1a1a1a] text-xs"
+                >
+                    <span class="text-emerald-500">$</span>
+                    <span class="text-white font-mono">24,500</span>
+                </div>
             </div>
         </header>
 
@@ -132,6 +149,7 @@
 
     <!-- RIGHT SIDEBAR: Context Panel (Agents / Meeting) -->
     <aside
+        data-testid="right-sidebar"
         class="flex flex-col border-l border-[#1f1f1f] bg-[#0a0a0a]"
         style="width: var(--context-width);"
     >

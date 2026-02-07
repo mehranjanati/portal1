@@ -60,6 +60,7 @@
       ></div>
       <div class="flex-1">
         <input
+          data-testid="post-composer"
           type="text"
           placeholder="Broadcast update or initialize agent..."
           class="w-full bg-transparent text-white placeholder-[#52525b] focus:outline-none text-sm py-2"
@@ -120,6 +121,7 @@
             </button>
           </div>
           <button
+            data-testid="post-submit"
             class="px-4 py-1.5 bg-white text-black text-xs font-semibold rounded hover:bg-gray-200 transition-colors"
           >
             Post
@@ -146,6 +148,7 @@
       {#if item.type === "agent_log"}
         <!-- Agent Log Card -->
         <div
+          data-testid="feed-post"
           class="p-4 rounded-xl border border-[#1f1f1f] bg-[#111]/50 hover:bg-[#111] transition-colors group"
         >
           <div class="flex items-start gap-4">
@@ -172,6 +175,7 @@
       {:else if item.type === "social"}
         <!-- Social Post Card -->
         <div
+          data-testid="feed-post"
           class="p-4 rounded-xl border border-[#1f1f1f] hover:border-[#333] transition-colors"
         >
           <div class="flex items-start gap-4">
@@ -192,6 +196,7 @@
               <!-- Post Actions -->
               <div class="flex gap-6 mt-4">
                 <button
+                  data-testid="like-button"
                   class="flex items-center gap-2 text-[#52525b] hover:text-white text-xs group transition-colors"
                 >
                   <svg
@@ -205,8 +210,10 @@
                     /></svg
                   >
                   <span>Like</span>
+                  <span data-testid="like-count">0</span>
                 </button>
                 <button
+                  data-testid="comment-button"
                   class="flex items-center gap-2 text-[#52525b] hover:text-white text-xs group transition-colors"
                 >
                   <svg
@@ -228,6 +235,7 @@
       {:else}
         <!-- System Alert -->
         <div
+          data-testid="feed-post"
           class="p-3 rounded-lg border border-l-4 border-[#1f1f1f] bg-[#111] {item.priority ===
           'high'
             ? 'border-l-amber-500'
