@@ -82,7 +82,7 @@
             </a>
             <div class="pt-4 pb-2 px-3">
                 <p
-                    class="text-[10px] uppercase font-bold text-[#52525b] tracking-wider"
+                    class="text-[10px] uppercase font-bold text-[#a1a1aa] tracking-wider"
                 >
                     Workspace
                 </p>
@@ -109,7 +109,7 @@
                     >
                         Alex D.
                     </p>
-                    <p class="text-[10px] text-[#52525b]">Pro Plan</p>
+                    <p class="text-[10px] text-[#a1a1aa]">Pro Plan</p>
                 </div>
             </div>
         </div>
@@ -124,7 +124,7 @@
         <header
             class="h-[60px] flex items-center justify-between px-6 border-b border-[#1f1f1f] shrink-0"
         >
-            <div class="flex items-center text-sm text-[#52525b]">
+            <div class="flex items-center text-sm text-[#a1a1aa]">
                 <span>Workspace</span>
                 <span class="mx-2">/</span>
                 <span class="text-white">Stream</span>
@@ -170,7 +170,7 @@
                         >
                     </div>
                     <span
-                        class="text-[10px] text-[#52525b] group-hover:text-white transition-colors"
+                        class="text-[10px] text-[#a1a1aa] group-hover:text-white transition-colors"
                         >2m ago</span
                     >
                 </div>
@@ -201,7 +201,7 @@
             <!-- Marketplace Teaser -->
             <div class="pt-6 border-t border-[#1f1f1f]">
                 <h4
-                    class="text-xs font-bold text-[#52525b] uppercase mb-3 tracking-wider"
+                    class="text-xs font-bold text-[#a1a1aa] uppercase mb-3 tracking-wider"
                 >
                     Marketplace
                 </h4>
@@ -215,7 +215,7 @@
                     </div>
                     <div>
                         <p class="text-xs text-white">DataAnalyzer</p>
-                        <p class="text-[10px] text-[#52525b]">$5/mo</p>
+                        <p class="text-[10px] text-[#a1a1aa]">$5/mo</p>
                     </div>
                 </div>
             </div>

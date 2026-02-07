@@ -63,7 +63,7 @@
           data-testid="post-composer"
           type="text"
           placeholder="Broadcast update or initialize agent..."
-          class="w-full bg-transparent text-white placeholder-[#52525b] focus:outline-none text-sm py-2"
+          class="w-full bg-transparent text-white placeholder-[#a1a1aa] focus:outline-none text-sm py-2"
         />
         <div
           class="flex items-center justify-between mt-3 pt-3 border-t border-[#1f1f1f]"
@@ -132,7 +132,7 @@
   </div>
 
   <!-- Feed Divider -->
-  <div class="flex items-center gap-4 text-xs font-medium text-[#52525b]">
+  <div class="flex items-center gap-4 text-xs font-medium text-[#a1a1aa]">
     <span class="text-white">All Activity</span>
     <span class="cursor-pointer hover:text-white transition-colors"
       >Agent Logs</span
@@ -162,7 +162,7 @@
                 <h4 class="text-sm font-semibold text-white">
                   {item.agentName}
                 </h4>
-                <span class="text-[10px] text-[#52525b]">{item.time}</span>
+                <span class="text-[10px] text-[#a1a1aa]">{item.time}</span>
               </div>
               <p
                 class="text-sm text-[#a1a1aa] mt-1 font-mono text-xs leading-relaxed"
@@ -187,7 +187,7 @@
             <div class="flex-1">
               <div class="flex items-center justify-between">
                 <h4 class="text-sm font-semibold text-white">{item.author}</h4>
-                <span class="text-[10px] text-[#52525b]">{item.time}</span>
+                <span class="text-[10px] text-[#a1a1aa]">{item.time}</span>
               </div>
               <p class="text-sm text-gray-300 mt-2 leading-relaxed">
                 {item.content}
@@ -197,7 +197,7 @@
               <div class="flex gap-6 mt-4">
                 <button
                   data-testid="like-button"
-                  class="flex items-center gap-2 text-[#52525b] hover:text-white text-xs group transition-colors"
+                  class="flex items-center gap-2 text-[#a1a1aa] hover:text-white text-xs group transition-colors"
                 >
                   <svg
                     class="w-4 h-4"
@@ -214,7 +214,7 @@
                 </button>
                 <button
                   data-testid="comment-button"
-                  class="flex items-center gap-2 text-[#52525b] hover:text-white text-xs group transition-colors"
+                  class="flex items-center gap-2 text-[#a1a1aa] hover:text-white text-xs group transition-colors"
                 >
                   <svg
                     class="w-4 h-4"
@@ -243,7 +243,7 @@
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-white">{item.title}</span>
-            <span class="text-[10px] text-[#52525b]">{item.time}</span>
+            <span class="text-[10px] text-[#a1a1aa]">{item.time}</span>
           </div>
           <p class="text-xs text-[#a1a1aa] mt-1">{item.content}</p>
         </div>
