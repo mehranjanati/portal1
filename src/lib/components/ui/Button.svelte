@@ -1,44 +1,47 @@
 <script lang="ts">
-	import { type Snippet } from 'svelte';
+	import { type Snippet } from "svelte";
 
 	interface Props {
-		variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-		size?: 'sm' | 'md' | 'lg';
+		variant?: "primary" | "secondary" | "ghost" | "danger";
+		size?: "sm" | "md" | "lg";
 		disabled?: boolean;
 		loading?: boolean;
-		type?: 'button' | 'submit' | 'reset';
+		type?: "button" | "submit" | "reset";
 		onclick?: (event: MouseEvent) => void;
-		children: Snippet;
+		children: Snippet | string;
 		class?: string;
-		'aria-label'?: string;
+		"aria-label"?: string;
 	}
 
 	let {
-		variant = 'primary',
-		size = 'md',
+		variant = "primary",
+		size = "md",
 		disabled = false,
 		loading = false,
-		type = 'button',
+		type = "button",
 		onclick,
 		children,
-		class: className = '',
-		'aria-label': ariaLabel,
+		class: className = "",
+		"aria-label": ariaLabel,
 		...restProps
 	}: Props = $props();
 
-	const baseClasses = 'btn inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-	
+	const baseClasses =
+		"btn inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+
 	const variantClasses = {
-		primary: 'btn-primary bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-		secondary: 'btn-secondary bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
-		ghost: 'btn-ghost bg-transparent hover:bg-gray-100 focus:ring-gray-500',
-		danger: 'btn-danger bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
+		primary:
+			"btn-primary bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
+		secondary:
+			"btn-secondary bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
+		ghost: "btn-ghost bg-transparent hover:bg-gray-100 focus:ring-gray-500",
+		danger: "btn-danger bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
 	};
 
 	const sizeClasses = {
-		sm: 'btn-sm px-3 py-1.5 text-sm rounded',
-		md: 'btn-md px-4 py-2 text-base rounded-md',
-		lg: 'btn-lg px-6 py-3 text-lg rounded-lg'
+		sm: "btn-sm px-3 py-1.5 text-sm rounded",
+		md: "btn-md px-4 py-2 text-base rounded-md",
+		lg: "btn-lg px-6 py-3 text-lg rounded-lg",
 	};
 
 	const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
@@ -48,7 +51,7 @@
 	{type}
 	class={classes}
 	disabled={disabled || loading}
-	onclick={onclick}
+	{onclick}
 	aria-label={ariaLabel}
 	{...restProps}
 >
@@ -74,7 +77,11 @@
 			></path>
 		</svg>
 	{/if}
-	{@render children()}
+	{#if typeof children === "string"}
+		{children}
+	{:else if children}
+		{@render children()}
+	{/if}
 </button>
 
 <style>

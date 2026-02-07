@@ -109,7 +109,7 @@
             <Button
                 variant={selectedCategory === null ? "default" : "outline"}
                 size="sm"
-                on:click={() => (selectedCategory = null)}
+                onclick={() => (selectedCategory = null)}
                 class="rounded-full"
             >
                 All
@@ -120,7 +120,7 @@
                         ? "default"
                         : "outline"}
                     size="sm"
-                    on:click={() => (selectedCategory = cat.id)}
+                    onclick={() => (selectedCategory = cat.id)}
                     class="rounded-full"
                 >
                     {cat.label}
