@@ -4,6 +4,7 @@
   import Chat from "$lib/components/chat/ChatInterface.svelte";
   import Meet from "$lib/components/meet/SessionInterface.svelte";
   import CMS from "$lib/components/global/cms-view.svelte";
+  import Builder from "$lib/components/builder/Builder.svelte";
 
   let currentHash = "#/";
 
@@ -27,6 +28,8 @@
   <Meet />
 {:else if currentHash === "#/cms"}
   <CMS />
+{:else if currentHash === "#/builder"}
+  <Builder />
 {:else}
   <div class="flex-1 flex items-center justify-center">
     <p class="text-white/50 italic">Page not found: {currentHash}</p>

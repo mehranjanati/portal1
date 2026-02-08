@@ -26,11 +26,11 @@ export interface Deployment {
 }
 
 class SuperNodeService {
-    
+
     /**
      * Triggers a tool execution on the Super Node (VoltAgent)
      */
-    async executeVoltAgentTool(toolId: string, args: Record<string, any>): Promise<{ workflowId: string }> {
+    async executeVoltAgentTool(toolId: string, args: any): Promise<{ workflowId: string }> {
         console.log(`[SuperNode] Executing tool ${toolId} with args:`, args);
         try {
             const res = await fetch(`${API_URL}/voltagent/execute`, {
@@ -43,6 +43,26 @@ class SuperNodeService {
         } catch (err) {
             console.warn("[SuperNode] Backend unreachable, returning mock workflow ID.");
             return { workflowId: `mock-wf-${Date.now()}` };
+        }
+    }
+
+    /**
+     * Retrieves the tool manifest from the Super Node
+     */
+    async getVoltAgentManifest(): Promise<any> {
+        try {
+            const res = await fetch(`${API_URL}/voltagent/manifest`);
+            if (!res.ok) throw new Error(`Backend error: ${res.statusText}`);
+            return await res.json();
+        } catch (err) {
+            // Mock manifest for demo
+            return {
+                version: "1.0.0",
+                tools: [
+                    { name: "system__deploy_website", description: "Deploy a website", parameters: {} },
+                    { name: "system__query_database", description: "Query the database", parameters: {} }
+                ]
+            };
         }
     }
 
@@ -97,8 +117,8 @@ class SuperNodeService {
         if (elapsed > 5000) { step = 'GEN_CODE'; logs.push('Generating Svelte components...'); }
         if (elapsed > 9000) { step = 'BUILDING'; logs.push('Building production bundle...'); }
         if (elapsed > 14000) { step = 'DEPLOYING'; logs.push('Deploying to edge...'); }
-        if (elapsed > 18000) { 
-            step = 'DONE'; 
+        if (elapsed > 18000) {
+            step = 'DONE';
             logs.push('Deployment complete.', 'Live URL generated.');
             return {
                 workflowId,
