@@ -11,8 +11,19 @@ test.describe('Dashboard Page', () => {
     });
 
     test('displays main navigation', async ({ page }) => {
-        const nav = page.locator('nav[data-testid="main-nav"]');
-        await expect(nav).toBeVisible();
+        // Get viewport size to determine if we're on mobile
+        const viewport = page.viewportSize();
+        const isMobile = viewport ? viewport.width < 768 : false;
+
+        if (isMobile) {
+            // On mobile, nav is in the mobile menu which is hidden by default
+            const mobileMenuButton = page.locator('[data-testid="mobile-menu-button"]');
+            await expect(mobileMenuButton).toBeVisible();
+        } else {
+            // On desktop, nav should be visible in left sidebar
+            const nav = page.locator('nav[data-testid="main-nav"]');
+            await expect(nav).toBeVisible();
+        }
     });
 
     test('displays 3-column layout on desktop', async ({ page }) => {
@@ -29,16 +40,31 @@ test.describe('Dashboard Page', () => {
     });
 
     test('displays user profile in left sidebar', async ({ page }) => {
-        const userProfile = page.locator('[data-testid="user-profile"]');
-        await expect(userProfile).toBeVisible();
+        // Get viewport size to determine if we're on mobile
+        const viewport = page.viewportSize();
+        const isMobile = viewport ? viewport.width < 768 : false;
 
-        // Check for avatar
-        const avatar = userProfile.locator('[data-testid="user-avatar"]');
-        await expect(avatar).toBeVisible();
+        if (!isMobile) {
+            // Only test on desktop where sidebar is visible
+            const userProfile = page.locator('[data-testid="user-profile"]');
+            await expect(userProfile).toBeVisible();
 
-        // Check for username
-        const username = userProfile.locator('[data-testid="username"]');
-        await expect(username).toBeVisible();
+            // Check for avatar
+            const avatar = userProfile.locator('[data-testid="user-avatar"]');
+            await expect(avatar).toBeVisible();
+
+            // Check for username
+            const username = userProfile.locator('[data-testid="username"]');
+            await expect(username).toBeVisible();
+        } else {
+            // On mobile, user profile is in mobile menu
+            const mobileMenuButton = page.locator('[data-testid="mobile-menu-button"]');
+            await mobileMenuButton.click();
+
+            const mobileMenu = page.locator('[data-testid="mobile-menu"]');
+            await expect(mobileMenu).toBeVisible();
+            await expect(mobileMenu).toContainText('Alex D.');
+        }
     });
 
     test('displays wallet balance', async ({ page }) => {
@@ -57,18 +83,47 @@ test.describe('Dashboard Page', () => {
     });
 
     test('displays agent cards in right sidebar', async ({ page }) => {
-        const agentCards = page.locator('[data-testid="agent-card"]');
-        await expect(agentCards.first()).toBeVisible();
+        // Get viewport size to determine if we're on desktop with large screen
+        const viewport = page.viewportSize();
+        const isLargeScreen = viewport ? viewport.width >= 1024 : false;
+
+        if (isLargeScreen) {
+            // Only test on large screens where right sidebar is visible (lg breakpoint)
+            const agentCards = page.locator('[data-testid="agent-card"]');
+            await expect(agentCards.first()).toBeVisible();
+        } else {
+            // On smaller screens, right sidebar is hidden
+            const rightSidebar = page.locator('[data-testid="right-sidebar"]');
+            await expect(rightSidebar).not.toBeVisible();
+        }
     });
 
     test('can navigate to different sections', async ({ page }) => {
-        // Click on agents link
-        await page.click('[data-testid="nav-agents"]');
-        await expect(page).toHaveURL(/\/agents/);
+        // Get viewport size to determine if we're on mobile
+        const viewport = page.viewportSize();
+        const isMobile = viewport ? viewport.width < 768 : false;
 
-        // Go back to dashboard
-        await page.click('[data-testid="nav-dashboard"]');
-        await expect(page).toHaveURL(/\//);
+        if (isMobile) {
+            // On mobile, open the menu first
+            const mobileMenuButton = page.locator('[data-testid="mobile-menu-button"]');
+            await mobileMenuButton.click();
+
+            // Wait for mobile menu to be visible
+            const mobileMenu = page.locator('[data-testid="mobile-menu"]');
+            await expect(mobileMenu).toBeVisible();
+
+            // Click on agents link in mobile menu
+            await page.click('a[href="#/agents"]');
+            await expect(page).toHaveURL(/\/agents/);
+        } else {
+            // On desktop, nav is visible in sidebar
+            await page.click('[data-testid="nav-agents"]');
+            await expect(page).toHaveURL(/\/agents/);
+
+            // Go back to dashboard
+            await page.click('[data-testid="nav-dashboard"]');
+            await expect(page).toHaveURL(/\//);
+        }
     });
 
     test('responsive layout on mobile', async ({ page }) => {
@@ -85,9 +140,17 @@ test.describe('Dashboard Page', () => {
     });
 
     test('can open mobile menu', async ({ page }) => {
-        await page.setViewportSize({ width: 375, height: 667 });
+        // Get current viewport size
+        const viewport = page.viewportSize();
+        const isMobile = viewport ? viewport.width < 768 : false;
+
+        if (!isMobile) {
+            // Set mobile viewport if not already mobile
+            await page.setViewportSize({ width: 375, height: 667 });
+        }
 
         const mobileMenuButton = page.locator('[data-testid="mobile-menu-button"]');
+        await expect(mobileMenuButton).toBeVisible();
         await mobileMenuButton.click();
 
         const mobileMenu = page.locator('[data-testid="mobile-menu"]');
@@ -157,25 +220,58 @@ test.describe('Agent Quick Actions', () => {
     });
 
     test('can view agent details', async ({ page }) => {
-        const firstAgentCard = page.locator('[data-testid="agent-card"]').first();
-        await firstAgentCard.click();
+        // Get viewport size to determine if we're on desktop with large screen
+        const viewport = page.viewportSize();
+        const isLargeScreen = viewport ? viewport.width >= 1024 : false;
 
-        const agentModal = page.locator('[data-testid="agent-detail-modal"]');
-        await expect(agentModal).toBeVisible();
+        if (isLargeScreen) {
+            // Only test on large screens where agent cards are visible
+            const firstAgentCard = page.locator('[data-testid="agent-card"]').first();
+            await expect(firstAgentCard).toBeVisible();
+            await firstAgentCard.click();
 
-        // Should show agent metrics
-        await expect(agentModal.locator('[data-testid="agent-roi"]')).toBeVisible();
-        await expect(agentModal.locator('[data-testid="agent-status"]')).toBeVisible();
+            const agentModal = page.locator('[data-testid="agent-detail-modal"]');
+            await expect(agentModal).toBeVisible();
+
+            // Should show agent metrics
+            await expect(agentModal.locator('[data-testid="agent-roi"]')).toBeVisible();
+            await expect(agentModal.locator('[data-testid="agent-status"]')).toBeVisible();
+        } else {
+            // Skip test on smaller screens where agent cards are not visible
+            test.skip();
+        }
     });
 
     test('can pause an agent', async ({ page }) => {
-        const firstAgentCard = page.locator('[data-testid="agent-card"]').first();
-        const pauseButton = firstAgentCard.locator('[data-testid="agent-pause"]');
+        // Get viewport size to determine if we're on desktop with large screen
+        const viewport = page.viewportSize();
+        const isLargeScreen = viewport ? viewport.width >= 1024 : false;
 
-        await pauseButton.click();
+        if (isLargeScreen) {
+            // Only test on large screens where agent cards are visible
+            const firstAgentCard = page.locator('[data-testid="agent-card"]').first();
+            await expect(firstAgentCard).toBeVisible();
 
-        // Status should change to paused
-        const status = firstAgentCard.locator('[data-testid="agent-status"]');
-        await expect(status).toHaveText(/paused/i);
+            // Click the card to open the modal
+            await firstAgentCard.click();
+
+            // Wait for modal to appear
+            const agentModal = page.locator('[data-testid="agent-detail-modal"]');
+            await expect(agentModal).toBeVisible();
+
+            // Click the pause button in the modal
+            const pauseButton = agentModal.getByText(/Pause Agent|Resume Agent/);
+            await pauseButton.click();
+
+            // Modal should close
+            await expect(agentModal).not.toBeVisible();
+
+            // Status in the card should change to paused
+            const status = firstAgentCard.locator('[data-testid="agent-status"]');
+            await expect(status).toHaveText(/paused/i);
+        } else {
+            // Skip test on smaller screens where agent cards are not visible
+            test.skip();
+        }
     });
 });

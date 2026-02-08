@@ -77,14 +77,18 @@
   }
 
   function toggleLike(item: any) {
-    if (item.liked) {
-      item.likes--;
-      item.liked = false;
-    } else {
-      item.likes = (item.likes || 0) + 1;
-      item.liked = true;
+    const index = feedItems.findIndex((i) => i.id === item.id);
+    if (index !== -1) {
+      if (feedItems[index].liked) {
+        feedItems[index].likes--;
+        feedItems[index].liked = false;
+      } else {
+        feedItems[index].likes = (feedItems[index].likes || 0) + 1;
+        feedItems[index].liked = true;
+      }
+      // Trigger reactivity by creating a new array
+      feedItems = [...feedItems];
     }
-    feedItems = [...feedItems];
   }
 
   let showCommentModal = $state(false);

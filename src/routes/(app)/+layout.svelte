@@ -255,12 +255,17 @@
             {#each agents as agent}
                 <div
                     data-testid="agent-card"
-                    class="w-full text-left p-3 rounded-lg border border-[#1f1f1f] bg-[#111] hover:border-[#333] transition-colors cursor-pointer group block"
+                    class="relative p-3 rounded-lg border border-[#1f1f1f] bg-[#111] hover:border-[#333] transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                     role="button"
                     tabindex="0"
                     onclick={() => openAgentModal(agent)}
-                    onkeydown={(e) =>
-                        e.key === "Enter" && openAgentModal(agent)}
+                    onkeydown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openAgentModal(agent);
+                        }
+                    }}
+                    aria-label="View details for {agent.name}"
                 >
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
@@ -277,32 +282,15 @@
                                 >{agent.name}</span
                             >
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span
-                                data-testid="agent-status"
-                                class="text-[10px] uppercase font-bold {agent.status ===
-                                'Active'
-                                    ? 'text-emerald-500'
-                                    : agent.status === 'Paused'
-                                      ? 'text-red-500'
-                                      : 'text-amber-500'}">{agent.status}</span
-                            >
-                            <button
-                                data-testid="agent-pause"
-                                class="p-1 hover:text-white text-[#a1a1aa]"
-                                title={agent.status === "Paused"
-                                    ? "Resume"
-                                    : "Pause"}
-                                onclick={(e) => {
-                                    e.stopPropagation();
-                                    togglePause(agent);
-                                }}
-                                aria-label="Toggle Pause {agent.name}"
-                                >{agent.status === "Paused"
-                                    ? "▶"
-                                    : "⏸"}</button
-                            >
-                        </div>
+                        <span
+                            data-testid="agent-status"
+                            class="text-[10px] uppercase font-bold {agent.status ===
+                            'Active'
+                                ? 'text-emerald-500'
+                                : agent.status === 'Paused'
+                                  ? 'text-red-500'
+                                  : 'text-amber-500'}">{agent.status}</span
+                        >
                     </div>
                     <p class="text-[11px] text-[#a1a1aa] leading-relaxed">
                         {agent.logs}

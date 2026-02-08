@@ -5,8 +5,8 @@ test.describe('Accessibility', () => {
     test('dashboard should not have any automatically detectable accessibility issues', async ({ page }) => {
         await page.goto('/');
 
-        // Wait for the main app structure to be visible
-        await page.waitForSelector('[data-testid="left-sidebar"]', { state: 'visible', timeout: 30000 });
+        // Wait for the main app structure to be visible (use center-feed which is always visible)
+        await page.waitForSelector('[data-testid="center-feed"]', { state: 'visible', timeout: 30000 });
 
         const title = await page.title();
         const content = await page.content();
