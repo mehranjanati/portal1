@@ -182,7 +182,7 @@
         <div class="flex items-center gap-2">
             <Button
                 variant="outline"
-                on:click={loadManifest}
+                onclick={loadManifest}
                 disabled={isLoadingManifest}
             >
                 {isLoadingManifest ? "Loading..." : "Reload Manifest"}
@@ -219,7 +219,7 @@
                                 selectedToolName
                                     ? 'border-[#333] bg-[#1a1a1a]'
                                     : 'border-[#1f1f1f] hover:border-[#333] hover:bg-[#141414]'}"
-                                on:click={() => selectTool(tool.name)}
+                                onclick={() => selectTool(tool.name)}
                             >
                                 <div class="text-xs font-medium">
                                     {tool.name}
@@ -259,10 +259,10 @@
                         class="w-full min-h-[180px] rounded-md border border-[#1f1f1f] bg-[#0a0a0a] px-3 py-2 text-xs font-mono text-white outline-none focus:border-[#333]"
                         bind:value={argsJson}
                         spellcheck="false"
-                    />
+                    ></textarea>
                     <div class="flex items-center gap-2">
                         <Button
-                            on:click={executeSelectedTool}
+                            onclick={executeSelectedTool}
                             disabled={!selectedTool || isExecuting}
                         >
                             {isExecuting ? "Executing..." : "Run Tool"}
