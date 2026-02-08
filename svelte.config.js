@@ -1,25 +1,16 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-auto';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-    // Consult https://svelte.dev/docs/kit/integrations
-    // for more information about preprocessors
     preprocess: vitePreprocess(),
 
     kit: {
-        appDir: 'internal',
-        adapter: adapter({
-            fallback: '404.html'
-        }),
-        paths: {
-            base: process.argv.includes('dev') ? '' : '/portal1',
-            relative: false
-        },
-        prerender: {
-            handleMissingId: 'ignore'
-        }
+        adapter: adapter(),
+        // SPA mode with API routes for Vercel
+        // No base path needed - Vercel handles routing
     }
 };
 
 export default config;
+

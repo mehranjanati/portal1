@@ -1,0 +1,104 @@
+{
+    "task": "Build minimal backend for Nexus Portal AI chat feature",
+    "architecture": {
+        "type": "serverless",
+        "deployment": "Vercel Functions",
+        "frontend": "SPA (no SSR)"
+    },
+    "requirements": {
+        "runtime": "Node.js 18+",
+        "framework": "SvelteKit API Routes",
+        "aiSdk": "Vercel AI SDK v4.1.17",
+        "provider": "OpenAI (gpt-4-turbo)"
+    },
+    "endpoints": [
+        {
+            "path": "/api/chat",
+            "method": "POST",
+            "purpose": "Stream AI responses to frontend",
+            "input": {
+                "messages": [
+                    {
+                        "role": "user | assistant | system",
+                        "content": "string"
+                    }
+                ]
+            },
+            "output": "Server-Sent Events (SSE) stream",
+            "implementation": {
+                "file": "src/routes/api/chat/+server.ts",
+                "code": "import { createOpenAI } from '@ai-sdk/openai';\nimport { streamText } from 'ai';\nimport type { RequestHandler } from './$types';\nimport { env } from '$env/dynamic/private';\n\nconst openai = createOpenAI({\n    apiKey: env.OPENAI_API_KEY\n});\n\nexport const POST: RequestHandler = async ({ request }) => {\n    const { messages } = await request.json();\n\n    const result = streamText({\n        model: openai('gpt-4-turbo'),\n        messages,\n        system: 'You are VoltAgent, a helpful AI assistant specialized in building applications.',\n    });\n\n    return result.toDataStreamResponse();\n};"
+            }
+        }
+    ],
+    "security": {
+        "apiKeyProtection": {
+            "rule": "NEVER expose OPENAI_API_KEY to frontend",
+            "storage": "Vercel environment variables (encrypted)",
+            "access": "Backend only"
+        },
+        "rateLimit": {
+            "strategy": "10 requests per minute per IP",
+            "optional": true,
+            "implementation": "Simple in-memory Map (see BACKEND_ARCHITECTURE.md)"
+        }
+    },
+    "deployment": {
+        "platform": "Vercel",
+        "steps": [
+            {
+                "step": 1,
+                "action": "Install Vercel CLI",
+                "command": "npm i -g vercel"
+            },
+            {
+                "step": 2,
+                "action": "Login to Vercel",
+                "command": "vercel login"
+            },
+            {
+                "step": 3,
+                "action": "Deploy project",
+                "command": "vercel --prod"
+            },
+            {
+                "step": 4,
+                "action": "Add API key",
+                "command": "vercel env add OPENAI_API_KEY",
+                "note": "Paste your OpenAI key when prompted"
+            }
+        ]
+    },
+    "testing": {
+        "local": {
+            "setup": [
+                "Create .env.local file",
+                "Add: OPENAI_API_KEY=sk-your-key"
+            ],
+            "run": "npm run dev",
+            "testCommand": "curl -X POST http://localhost:5173/api/chat -H 'Content-Type: application/json' -d '{\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}'"
+        }
+    },
+    "cost": {
+        "vercelHosting": "Free (up to 100GB bandwidth)",
+        "serverlessFunctions": "Free (up to 100GB-hours)",
+        "openaiApi": "Pay-as-you-go (~$0.01 per request)",
+        "estimatedMonthly": "$0 for low traffic"
+    },
+    "frontendIntegration": {
+        "library": "@ai-sdk/svelte",
+        "usage": "import { useChat } from 'ai/svelte';\n\nconst { messages, input, handleSubmit } = useChat({\n    api: '/api/chat'\n});"
+    },
+    "fileStructure": {
+        "backend": "src/routes/api/chat/+server.ts",
+        "env": ".env.local (local) / Vercel Dashboard (production)",
+        "config": "svelte.config.js (adapter-auto)"
+    },
+    "keyPoints": [
+        "Frontend is pure SPA (ssr=false)",
+        "Only /api/chat runs on server",
+        "Zero server management (serverless)",
+        "Auto-scales with traffic",
+        "API key stays secure on server"
+    ]
+}
