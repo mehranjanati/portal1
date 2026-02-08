@@ -21,7 +21,7 @@
 		"deploy": "npm run build && gh-pages -d build"
 	},
 	"devDependencies": {
-		"@ai-sdk/openai": "^3.0.26",
+		"@ai-sdk/openai": "^1.1.9",
 		"@axe-core/playwright": "^4.11.1",
 		"@internationalized/date": "^3.10.1",
 		"@lucide/svelte": "^0.562.0",
@@ -58,7 +58,7 @@
 	"dependencies": {
 		"@ai-sdk/svelte": "^1.1.11",
 		"@fontsource/inter": "^5.2.8",
-		"ai": "^6.0.77",
+		"ai": "^4.1.17",
 		"bits-ui": "^2.14.4",
 		"livekit-client": "^2.16.1",
 		"lucide-svelte": "^0.562.0",
