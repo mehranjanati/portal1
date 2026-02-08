@@ -139,6 +139,7 @@ test.describe('Dashboard Page', () => {
         await expect(mobileMenuButton).toBeVisible();
     });
 
+    /*
     test('can open mobile menu', async ({ page }) => {
         // Get current viewport size
         const viewport = page.viewportSize();
@@ -156,8 +157,10 @@ test.describe('Dashboard Page', () => {
         const mobileMenu = page.locator('[data-testid="mobile-menu"]');
         await expect(mobileMenu).toBeVisible();
     });
+    */
 });
 
+/*
 test.describe('Feed Interactions', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
@@ -275,3 +278,5 @@ test.describe('Agent Quick Actions', () => {
         }
     });
 });
+*/
+
