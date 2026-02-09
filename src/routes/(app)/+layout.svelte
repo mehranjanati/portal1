@@ -377,16 +377,19 @@
         <nav class="flex-1 p-6 space-y-4">
             <a
                 href="#/"
+                data-testid="nav-dashboard"
                 onclick={closeMobileMenu}
                 class="block text-lg font-medium">Home</a
             >
             <a
                 href="#/agents"
+                data-testid="nav-agents"
                 onclick={closeMobileMenu}
                 class="block text-lg font-medium">My Agents</a
             >
             <a
                 href="{base}/marketplace"
+                data-testid="nav-marketplace"
                 onclick={closeMobileMenu}
                 class="block text-lg font-medium">Marketplace</a
             >
