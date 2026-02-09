@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-auto';
+import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -6,9 +6,16 @@ const config = {
     preprocess: vitePreprocess(),
 
     kit: {
-        adapter: adapter(),
-        // SPA mode with API routes for Vercel
-        // No base path needed - Vercel handles routing
+        adapter: adapter({
+            pages: 'build',
+            assets: 'build',
+            fallback: '404.html',
+            precompress: false,
+            strict: true
+        }),
+        paths: {
+            base: process.argv.includes('dev') ? '' : '/portal1'
+        }
     }
 };
 
