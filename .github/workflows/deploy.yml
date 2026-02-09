@@ -1,9 +1,11 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (DISABLED - Using Vercel)
 
+# This workflow is disabled. The project now deploys to Vercel.
+# To re-enable GitHub Pages deployment, uncomment the 'push' trigger below.
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  workflow_dispatch:  # Manual trigger only
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
