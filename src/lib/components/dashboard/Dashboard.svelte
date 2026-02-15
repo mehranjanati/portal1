@@ -14,6 +14,7 @@
     Table as TableIcon,
     Waves,
     Gauge as GaugeIcon,
+    CreditCard,
   } from "lucide-svelte";
 
   let activeTab = $state("overview");
@@ -64,13 +65,28 @@
 <div class="space-y-6">
   <!-- Header with Tabs -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight text-text-primary">
-        Command Center
-      </h1>
-      <p class="text-sm text-text-muted mt-1">
-        Real-time monitoring and node orchestration.
-      </p>
+    <div class="flex items-center gap-4">
+      <div>
+        <h1
+          class="text-2xl font-bold tracking-tight text-text-primary flex items-center gap-3"
+        >
+          Command Center
+          <div
+            class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-status-success/10 border border-status-success/20"
+          >
+            <div
+              class="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse shadow-[0_0_8px_#00ff9d]"
+            ></div>
+            <span
+              class="text-[10px] font-bold text-status-success uppercase tracking-widest"
+              >Live</span
+            >
+          </div>
+        </h1>
+        <p class="text-sm text-text-muted mt-1">
+          Real-time monitoring and node orchestration.
+        </p>
+      </div>
     </div>
 
     <div
@@ -105,33 +121,32 @@
     <!-- Overview Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <MetricCard
-        title="Active Agents"
-        value="1,248"
-        trend="+12%"
-        icon={Cpu}
+        title="Active Projects"
+        value="12"
+        trend="+2"
+        icon={LayoutGrid}
         color="accent-primary"
       />
       <MetricCard
-        title="Streams Throughput"
-        value="38,992 msg/s"
-        trend="+3%"
+        title="Monthly Revenue"
+        value="$12,450"
+        trend="+8.5%"
+        icon={CreditCard}
+        color="status-success"
+      />
+      <MetricCard
+        title="LiveKit Usage"
+        value="8,240 min"
+        trend="+15%"
         icon={Waves}
         color="accent-secondary"
       />
       <MetricCard
-        title="WASM Runtime Health"
-        value="99.9%"
+        title="WASM Cloud Health"
+        value="99.99%"
         trend="stable"
         icon={ShieldCheck}
         color="status-success"
-      />
-      <MetricCard
-        title="Avg Latency (p95)"
-        value="42ms"
-        trend="-5%"
-        trendDirection="down"
-        icon={Zap}
-        color="status-warning"
       />
     </div>
 
@@ -144,7 +159,7 @@
           </h3>
           <span class="text-xs text-text-muted">Last 24h</span>
         </div>
-        <SparklineChart class="h-[280px]" />
+        <SparklineChart class="h-[280px]" title="Avg Latency" unit="ms" />
       </Card>
 
       <Card class="lg:col-span-4 h-full flex flex-col">
@@ -155,7 +170,7 @@
           </h3>
         </div>
         <div class="flex-1 overflow-y-auto">
-          <AlertFeed {alerts} hideTitle />
+          <AlertFeed {alerts} title="Recent Activities" />
         </div>
       </Card>
     </div>

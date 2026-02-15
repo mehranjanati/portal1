@@ -9,6 +9,9 @@
   import Logs from "$lib/components/logs/Logs.svelte";
   import Handoff from "$lib/components/handoff/Handoff.svelte";
   import Settings from "$lib/components/settings/Settings.svelte";
+  import Projects from "$lib/components/projects/Projects.svelte";
+  import Billing from "$lib/components/billing/Billing.svelte";
+  import Marketplace from "$lib/components/marketplace/Marketplace.svelte";
 
   // Track current hash
   let currentHash = $state("");
@@ -31,6 +34,9 @@
   // Simple router mapping
   const routes = {
     "#/dashboard": Dashboard,
+    "#/projects": Projects,
+    "#/marketplace": Marketplace,
+    "#/billing": Billing,
     "#/foundry": Foundry,
     "#/streams": Streams,
     "#/deployments": Deployments,

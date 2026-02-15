@@ -10,17 +10,23 @@
         Terminal,
         Phone,
         Settings,
+        FolderPlus,
+        CreditCard,
         ChevronLeft,
         ChevronRight,
         LogOut,
         User,
+        ShoppingBag,
     } from "lucide-svelte";
 
     let { collapsed = $bindable(false) } = $props();
 
     const navigation = [
         { label: "Dashboard", icon: LayoutGrid, route: "#/dashboard" },
+        { label: "Projects", icon: FolderPlus, route: "#/projects" },
+        { label: "Marketplace", icon: ShoppingBag, route: "#/marketplace" },
         { label: "Agent Foundry", icon: Cpu, route: "#/foundry" },
+        { label: "Billing", icon: CreditCard, route: "#/billing" },
         { label: "Streams", icon: Workflow, route: "#/streams" },
         { label: "Deployments", icon: Rocket, route: "#/deployments" },
         { label: "Workflows", icon: Workflow, route: "#/workflows" },

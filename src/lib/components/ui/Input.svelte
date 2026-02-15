@@ -1,7 +1,12 @@
 <script lang="ts">
     import { cn } from "$lib/utils";
 
-    let { class: className = "", type = "text", ...rest } = $props();
+    let {
+        class: className = "",
+        type = "text",
+        value = $bindable(),
+        ...rest
+    } = $props();
 </script>
 
 <input

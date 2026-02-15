@@ -54,19 +54,32 @@
 
 <div class="space-y-6 h-full flex flex-col">
     <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold tracking-tight">Unified Logs</h1>
-            <p class="text-sm text-text-muted mt-1">
-                Cross-cluster observability and event tracing.
-            </p>
+        <div class="flex items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Unified Logs</h1>
+                <p class="text-sm text-text-muted mt-1">
+                    Cross-cluster observability and event tracing.
+                </p>
+            </div>
         </div>
         <div class="flex gap-2">
-            <Button variant="outline" size="sm" class="gap-2"
-                ><Download size={14} /> Export</Button
+            <Button
+                variant="outline"
+                size="sm"
+                class="gap-2 border-white/5 bg-white/5"
             >
-            <Button variant="primary" size="sm" class="gap-2"
-                ><Terminal size={14} /> Live Tail</Button
+                <Download size={14} /> Export CSV
+            </Button>
+            <Button
+                variant="primary"
+                size="sm"
+                class="gap-2 shadow-[0_0_15px_rgba(0,255,157,0.1)]"
             >
+                <div
+                    class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"
+                ></div>
+                Live Tail
+            </Button>
         </div>
     </div>
 
