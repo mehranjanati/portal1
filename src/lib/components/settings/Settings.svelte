@@ -154,7 +154,7 @@
                                     <div
                                         class="w-1.5 h-1.5 rounded-full bg-status-success"
                                     ></div>
-                                    Connected to @mehran
+                                    Connected to GitHub Account
                                 </div>
                             </div>
                         </section>
