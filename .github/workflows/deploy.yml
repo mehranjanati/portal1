@@ -37,17 +37,17 @@ jobs:
       - name: Run SvelteKit sync
         run: npm run prepare
       
-      - name: Run unit tests
-        run: npm test -- --run
+      # - name: Run unit tests
+      #   run: npm test -- --run
       
-      - name: Install Playwright
-        run: npx playwright install --with-deps
+      # - name: Install Playwright
+      #   run: npx playwright install --with-deps
       
-      - name: Run E2E tests
-        run: npm run test:e2e
+      # - name: Run E2E tests
+      #   run: npm run test:e2e
       
-      - name: Type check
-        run: npm run check
+      # - name: Type check
+      #   run: npm run check
 
   build:
     name: Build

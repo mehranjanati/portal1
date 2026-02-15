@@ -14,7 +14,7 @@ const config = {
             strict: true
         }),
         paths: {
-            base: process.argv.includes('dev') ? '' : '/nexus-portal'
+            base: process.argv.includes('dev') ? '' : '/portal1'
         }
     }
 };
