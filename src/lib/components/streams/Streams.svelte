@@ -8,7 +8,7 @@
         StopCircle,
         RefreshCcw,
         Activity,
-        ShieldCircle,
+        ShieldCheck,
         Database,
         Network,
     } from "lucide-svelte";
@@ -75,7 +75,7 @@
                     class="absolute top-1/4 left-1/4 p-3 border-accent-primary animate-pulse w-40 cursor-move"
                 >
                     <div class="flex items-center gap-2 mb-2">
-                        <ShieldCircle size={16} class="text-accent-primary" />
+                        <ShieldCheck size={16} class="text-accent-primary" />
                         <span class="text-xs font-bold font-mono">AGENT_01</span
                         >
                     </div>
