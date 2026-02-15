@@ -1,65 +1,49 @@
 <script lang="ts">
-	import { type Snippet } from "svelte";
-
-	interface Props {
-		variant?: "primary" | "secondary" | "ghost" | "danger";
-		size?: "sm" | "md" | "lg";
-		disabled?: boolean;
-		loading?: boolean;
-		type?: "button" | "submit" | "reset";
-		onclick?: (event: MouseEvent) => void;
-		children: Snippet | string;
-		class?: string;
-		"aria-label"?: string;
-	}
+	import { cn } from "$lib/utils";
 
 	let {
-		variant = "primary",
-		size = "md",
-		disabled = false,
-		loading = false,
-		type = "button",
-		onclick,
 		children,
 		class: className = "",
-		"aria-label": ariaLabel,
-		...restProps
-	}: Props = $props();
+		variant = "default",
+		size = "default",
+		disabled = false,
+		loading = false,
+		...rest
+	} = $props();
 
-	const baseClasses =
-		"btn inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
-
-	const variantClasses = {
+	const variants = {
+		default:
+			"bg-bg-secondary text-text-primary hover:bg-bg-tertiary border border-white/10",
 		primary:
-			"btn-primary bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
+			"bg-accent-primary text-bg-primary hover:bg-accent-primary/90 font-semibold shadow-[0_0_15px_rgba(0,255,157,0.3)]",
 		secondary:
-			"btn-secondary bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
-		ghost: "btn-ghost bg-transparent hover:bg-gray-100 focus:ring-gray-500",
-		danger: "btn-danger bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
+			"bg-accent-secondary text-white hover:bg-accent-secondary/90",
+		outline: "bg-transparent border border-white/20 hover:bg-white/5",
+		ghost: "bg-transparent hover:bg-white/5",
+		danger: "bg-status-danger/10 text-status-danger border border-status-danger/20 hover:bg-status-danger/20",
 	};
 
-	const sizeClasses = {
-		sm: "btn-sm px-3 py-1.5 text-sm rounded",
-		md: "btn-md px-4 py-2 text-base rounded-md",
-		lg: "btn-lg px-6 py-3 text-lg rounded-lg",
+	const sizes = {
+		sm: "h-8 px-3 text-xs",
+		default: "h-10 px-4 py-2",
+		lg: "h-12 px-8 text-lg",
+		icon: "h-10 w-10 p-0 flex items-center justify-center",
 	};
-
-	let classes = $derived(
-		`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`,
-	);
 </script>
 
 <button
-	{type}
-	class={classes}
+	class={cn(
+		"inline-flex items-center justify-center rounded-button font-medium transition-all focus:outline-none focus:ring-2 focus:ring-accent-primary/50 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]",
+		variants[variant as keyof typeof variants],
+		sizes[size as keyof typeof sizes],
+		className,
+	)}
 	disabled={disabled || loading}
-	{onclick}
-	aria-label={ariaLabel}
-	{...restProps}
+	{...rest}
 >
 	{#if loading}
 		<svg
-			class="loading-spinner animate-spin -ml-1 mr-2 h-4 w-4"
+			class="animate-spin -ml-1 mr-2 h-4 w-4"
 			xmlns="http://www.w3.org/2000/svg"
 			fill="none"
 			viewBox="0 0 24 24"
@@ -79,20 +63,5 @@
 			></path>
 		</svg>
 	{/if}
-	{#if typeof children === "string"}
-		{children}
-	{:else if children}
-		{@render children()}
-	{/if}
+	{@render children()}
 </button>
-
-<style>
-	.btn {
-		position: relative;
-		overflow: hidden;
-	}
-
-	.btn:active {
-		transform: scale(0.98);
-	}
-</style>

@@ -1,379 +1,331 @@
 <script lang="ts">
-  import dashboardConfig from "../../../data/dashboard.json";
+  import { cn } from "$lib/utils";
+  import MetricCard from "$lib/components/dashboard/MetricCard.svelte";
+  import SparklineChart from "$lib/components/dashboard/SparklineChart.svelte";
+  import AlertFeed from "$lib/components/dashboard/AlertFeed.svelte";
+  import Card from "$lib/components/ui/Card.svelte";
+  import {
+    Cpu,
+    Activity,
+    ShieldCheck,
+    Zap,
+    LayoutGrid,
+    Settings2,
+    Table as TableIcon,
+    Waves,
+    Gauge as GaugeIcon,
+  } from "lucide-svelte";
 
-  // Mock Feed Data
-  let feedItems = $state([
+  let activeTab = $state("overview");
+
+  const alerts = [
+    { type: "warning", message: "CI queue backlog detected", time: "2m ago" },
     {
-      id: 1,
-      type: "agent_log",
-      agentName: "AlphaTrader_V2",
-      content: "Executed limit buy order for 15 ETH @ $2,240. Slippage: 0.01%.",
-      time: "Just now",
-      status: "success",
-      likes: 0,
-      liked: false,
+      type: "info",
+      message: "New agent 'DataAnalyzer' deployed",
+      time: "10m ago",
+    },
+    { type: "success", message: "System backup completed", time: "1h ago" },
+    { type: "error", message: "Node-4 connection timeout", time: "2h ago" },
+  ];
+
+  const nodes = [
+    {
+      id: "node-1",
+      role: "Validator",
+      status: "online",
+      uptime: "14d 2h",
+      load: "42%",
     },
     {
-      id: 2,
-      type: "social",
-      author: "Sarah K. (Product)",
-      content:
-        "Just deployed the new marketing agent Swarm. It is already optimizing ad spend on Farcaster frames. 🚀 #AI #Marketing",
-      time: "12 mins ago",
-      avatar: "S",
-      likes: 5,
-      liked: false,
+      id: "node-2",
+      role: "Ingestor",
+      status: "online",
+      uptime: "5d 1h",
+      load: "68%",
     },
     {
-      id: 3,
-      type: "system",
-      title: "Protocol Update",
-      content:
-        "New governance proposal is live on Snapshot. Voting ends in 24h.",
-      time: "1 hour ago",
-      priority: "high",
-      likes: 0,
-      liked: false,
+      id: "node-3",
+      role: "Executor",
+      status: "offline",
+      uptime: "0s",
+      load: "0%",
     },
-  ]);
-
-  // Load announcements (keep existing logic but map to feed)
-  const announcementModules = import.meta.glob(
-    "../../../data/announcements/*.json",
-    { eager: true },
-  );
-
-  // Merge CMS announcements into feed
-  Object.values(announcementModules).forEach((mod: any) => {
-    const item = mod.default || mod;
-    feedItems.push({
-      id: Math.random(),
-      type: "system",
-      title: item.title,
-      content: item.body || item.title,
-      time: new Date(item.date).toLocaleDateString(),
-      priority: item.type === "warning" ? "high" : "normal",
-      likes: 0,
-      liked: false,
-    });
-  });
-
-  let newPostContent = $state("");
-
-  function handlePostSubmit() {
-    if (!newPostContent.trim()) return;
-    const newItem = {
-      id: Math.random(),
-      type: "social",
-      author: "Alex D.",
-      content: newPostContent,
-      time: "Just now",
-      avatar: "A",
-      likes: 0,
-      liked: false,
-    };
-    feedItems = [newItem, ...feedItems];
-    newPostContent = "";
-  }
-
-  function toggleLike(item: any) {
-    const index = feedItems.findIndex((i) => i.id === item.id);
-    if (index !== -1) {
-      if (feedItems[index].liked) {
-        feedItems[index].likes--;
-        feedItems[index].liked = false;
-      } else {
-        feedItems[index].likes = (feedItems[index].likes || 0) + 1;
-        feedItems[index].liked = true;
-      }
-      // Trigger reactivity by creating a new array
-      feedItems = [...feedItems];
-    }
-  }
-
-  let showCommentModal = $state(false);
-  function openCommentModal() {
-    showCommentModal = true;
-  }
+    {
+      id: "node-4",
+      role: "Validator",
+      status: "online",
+      uptime: "125d",
+      load: "12%",
+    },
+  ];
 </script>
 
-<div class="max-w-3xl mx-auto py-8 px-6 space-y-6">
-  <!-- "What's Happening" / Command Bar -->
-  <div class="p-4 rounded-xl border border-[#1f1f1f] bg-[#111]">
-    <div class="flex gap-4">
-      <div
-        class="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 shrink-0"
-      ></div>
-      <div class="flex-1">
-        <input
-          data-testid="post-composer"
-          type="text"
-          bind:value={newPostContent}
-          onkeydown={(e) => e.key === "Enter" && handlePostSubmit()}
-          placeholder="Broadcast update or initialize agent..."
-          class="w-full bg-transparent text-white placeholder-[#a1a1aa] focus:outline-none text-sm py-2"
-        />
-        <div
-          class="flex items-center justify-between mt-3 pt-3 border-t border-[#1f1f1f]"
-        >
-          <div class="flex gap-2">
-            <button
-              class="p-1.5 text-[#a1a1aa] hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
-              title="Attach Media"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><rect
-                  width="18"
-                  height="18"
-                  x="3"
-                  y="3"
-                  rx="2"
-                  ry="2"
-                /><circle cx="9" cy="9" r="2" /><path
-                  d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"
-                /></svg
-              >
-            </button>
-            <button
-              class="p-1.5 text-[#a1a1aa] hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
-              title="Trigger Agent"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path
-                  d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
-                /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line
-                  x1="12"
-                  x2="12"
-                  y1="19"
-                  y2="22"
-                /></svg
-              >
-            </button>
-          </div>
-          <button
-            data-testid="post-submit"
-            onclick={handlePostSubmit}
-            class="px-4 py-1.5 bg-white text-black text-xs font-semibold rounded hover:bg-gray-200 transition-colors"
-          >
-            Post
-          </button>
-        </div>
-      </div>
+<div class="space-y-6">
+  <!-- Header with Tabs -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-text-primary">
+        Command Center
+      </h1>
+      <p class="text-sm text-text-muted mt-1">
+        Real-time monitoring and node orchestration.
+      </p>
+    </div>
+
+    <div
+      class="flex items-center gap-2 p-1 bg-bg-secondary rounded-lg border border-white/5"
+    >
+      <button
+        onclick={() => (activeTab = "overview")}
+        class={cn(
+          "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+          activeTab === "overview"
+            ? "bg-bg-tertiary text-accent-primary shadow-sm"
+            : "text-text-muted hover:text-text-primary",
+        )}
+      >
+        Overview
+      </button>
+      <button
+        onclick={() => (activeTab = "infra")}
+        class={cn(
+          "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+          activeTab === "infra"
+            ? "bg-bg-tertiary text-accent-primary shadow-sm"
+            : "text-text-muted hover:text-text-primary",
+        )}
+      >
+        Infra
+      </button>
     </div>
   </div>
 
-  <!-- Feed Divider -->
-  <div class="flex items-center gap-4 text-xs font-medium text-[#a1a1aa]">
-    <h2 class="text-white font-medium">All Activity</h2>
-    <span class="cursor-pointer hover:text-white transition-colors"
-      >Agent Logs</span
-    >
-    <span class="cursor-pointer hover:text-white transition-colors"
-      >Mentions</span
-    >
-  </div>
+  {#if activeTab === "overview"}
+    <!-- Overview Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <MetricCard
+        title="Active Agents"
+        value="1,248"
+        trend="+12%"
+        icon={Cpu}
+        color="accent-primary"
+      />
+      <MetricCard
+        title="Streams Throughput"
+        value="38,992 msg/s"
+        trend="+3%"
+        icon={Waves}
+        color="accent-secondary"
+      />
+      <MetricCard
+        title="WASM Runtime Health"
+        value="99.9%"
+        trend="stable"
+        icon={ShieldCheck}
+        color="status-success"
+      />
+      <MetricCard
+        title="Avg Latency (p95)"
+        value="42ms"
+        trend="-5%"
+        trendDirection="down"
+        icon={Zap}
+        color="status-warning"
+      />
+    </div>
 
-  <!-- Feed Stream -->
-  <div class="space-y-4">
-    {#each feedItems as item}
-      {#if item.type === "agent_log"}
-        <!-- Agent Log Card -->
-        <div
-          data-testid="feed-post"
-          class="p-4 rounded-xl border border-[#1f1f1f] bg-[#111]/50 hover:bg-[#111] transition-colors group"
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[400px]">
+      <Card class="lg:col-span-8 h-full p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="font-semibold flex items-center gap-2">
+            <Activity size={18} class="text-accent-primary" />
+            Performance Latency (p95)
+          </h3>
+          <span class="text-xs text-text-muted">Last 24h</span>
+        </div>
+        <SparklineChart class="h-[280px]" />
+      </Card>
+
+      <Card class="lg:col-span-4 h-full flex flex-col">
+        <div class="p-6 border-b border-white/5">
+          <h3 class="font-semibold flex items-center gap-2">
+            <Zap size={18} class="text-status-warning" />
+            System Alerts
+          </h3>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+          <AlertFeed {alerts} hideTitle />
+        </div>
+      </Card>
+    </div>
+  {:else}
+    <!-- Infra Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Gauge 1 -->
+      <Card class="p-6 flex flex-col items-center text-center space-y-4">
+        <div class="relative w-32 h-32 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90">
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              class="text-white/5"
+            />
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              stroke-dasharray="364.4"
+              stroke-dashoffset={364.4 * (1 - 0.68)}
+              class="text-accent-primary transition-all duration-1000"
+            />
+          </svg>
+          <span class="absolute text-2xl font-bold">68%</span>
+        </div>
+        <div>
+          <h3 class="font-semibold">CPU Load</h3>
+          <p class="text-xs text-text-muted">Cluster Average</p>
+        </div>
+      </Card>
+
+      <!-- Gauge 2 -->
+      <Card class="p-6 flex flex-col items-center text-center space-y-4">
+        <div class="relative w-32 h-32 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90">
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              class="text-white/5"
+            />
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              stroke-dasharray="364.4"
+              stroke-dashoffset={364.4 * (1 - 0.74)}
+              class="text-accent-secondary transition-all duration-1000"
+            />
+          </svg>
+          <span class="absolute text-2xl font-bold">74%</span>
+        </div>
+        <div>
+          <h3 class="font-semibold">Memory Usage</h3>
+          <p class="text-xs text-text-muted">High Consumption</p>
+        </div>
+      </Card>
+
+      <!-- Gauge 3 -->
+      <Card class="p-6 flex flex-col items-center text-center space-y-4">
+        <div class="relative w-32 h-32 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90">
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              class="text-white/5"
+            />
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              stroke-dasharray="364.4"
+              stroke-dashoffset={364.4 * (1 - 0.41)}
+              class="text-status-warning transition-all duration-1000"
+            />
+          </svg>
+          <span class="absolute text-2xl font-bold">41%</span>
+        </div>
+        <div>
+          <h3 class="font-semibold">Disk IO</h3>
+          <p class="text-xs text-text-muted">Optimizing storage...</p>
+        </div>
+      </Card>
+    </div>
+
+    <Card class="overflow-hidden">
+      <div
+        class="p-6 border-b border-white/5 flex items-center justify-between"
+      >
+        <h3 class="font-semibold flex items-center gap-2">
+          <TableIcon size={18} class="text-text-muted" />
+          Active Nodes
+        </h3>
+        <button class="text-xs text-accent-primary hover:underline"
+          >Rebalance Cluster</button
         >
-          <div class="flex items-start gap-4">
-            <div
-              class="w-10 h-10 rounded-lg bg-emerald-900/20 border border-emerald-900/50 flex items-center justify-center shrink-0"
-            >
-              <span class="text-emerald-500 font-mono text-xs">LOG</span>
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-white">
-                  {item.agentName}
-                </h3>
-                <span class="text-[10px] text-[#a1a1aa]">{item.time}</span>
-              </div>
-              <p
-                class="text-sm text-[#a1a1aa] mt-1 font-mono text-xs leading-relaxed"
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-white/5 text-xs uppercase font-bold text-text-muted">
+              <th class="px-6 py-3">Node ID</th>
+              <th class="px-6 py-3">Role</th>
+              <th class="px-6 py-3">Status</th>
+              <th class="px-6 py-3">Uptime</th>
+              <th class="px-6 py-3">Load</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            {#each nodes as node}
+              <tr
+                class="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
               >
-                {item.content}
-              </p>
-
-              <!-- Post Actions -->
-              <div class="flex gap-6 mt-4">
-                <button
-                  data-testid="like-button"
-                  onclick={() => toggleLike(item)}
-                  class="flex items-center gap-2 {item.liked
-                    ? 'text-blue-400 liked active'
-                    : 'text-[#a1a1aa]'} hover:text-white text-xs group transition-colors"
+                <td class="px-6 py-4 font-mono text-accent-secondary"
+                  >{node.id}</td
                 >
-                  <svg
-                    class="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill={item.liked ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    stroke-width="2"
-                    ><path
-                      d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
-                    /></svg
-                  >
-                  <span>Like</span>
-                  <span data-testid="like-count">{item.likes || 0}</span>
-                </button>
-                <button
-                  data-testid="comment-button"
-                  onclick={openCommentModal}
-                  class="flex items-center gap-2 text-[#a1a1aa] hover:text-white text-xs group transition-colors"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    ><path
-                      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
-                    /></svg
-                  >
-                  <span>Comment</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      {:else if item.type === "social"}
-        <!-- Social Post Card -->
-        <div
-          data-testid="feed-post"
-          class="p-4 rounded-xl border border-[#1f1f1f] hover:border-[#333] transition-colors"
-        >
-          <div class="flex items-start gap-4">
-            <div
-              class="w-10 h-10 rounded-full bg-blue-900/30 text-blue-400 flex items-center justify-center shrink-0 text-sm font-bold"
-            >
-              {item.avatar}
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-white">{item.author}</h3>
-                <span class="text-[10px] text-[#a1a1aa]">{item.time}</span>
-              </div>
-              <p class="text-sm text-gray-300 mt-2 leading-relaxed">
-                {item.content}
-              </p>
-
-              <!-- Post Actions -->
-              <div class="flex gap-6 mt-4">
-                <button
-                  data-testid="like-button"
-                  onclick={() => toggleLike(item)}
-                  class="flex items-center gap-2 {item.liked
-                    ? 'text-blue-400 liked active'
-                    : 'text-[#a1a1aa]'} hover:text-white text-xs group transition-colors"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill={item.liked ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    stroke-width="2"
-                    ><path
-                      d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
-                    /></svg
-                  >
-                  <span>Like</span>
-                  <span data-testid="like-count">{item.likes || 0}</span>
-                </button>
-                <button
-                  data-testid="comment-button"
-                  onclick={openCommentModal}
-                  class="flex items-center gap-2 text-[#a1a1aa] hover:text-white text-xs group transition-colors"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    ><path
-                      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
-                    /></svg
-                  >
-                  <span>Comment</span>
-                </button>
-              </div>
-
-              {#if showCommentModal}
-                <div
-                  data-testid="comment-modal"
-                  class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-                >
-                  <div
-                    class="bg-[#111] border border-[#1f1f1f] rounded-2xl p-6 w-full max-w-lg shadow-2xl"
-                  >
-                    <h2 class="text-xl font-bold mb-4">Add Comment</h2>
-                    <textarea
-                      class="w-full bg-[#0a0a0a] border border-[#1f1f1f] rounded-xl p-4 text-white focus:outline-none focus:border-nexus-accent mb-4"
-                      placeholder="Write your comment..."
-                      rows="4"
-                    ></textarea>
-                    <div class="flex justify-end gap-3">
-                      <button
-                        onclick={() => (showCommentModal = false)}
-                        class="px-5 py-2 text-[#a1a1aa] hover:text-white transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onclick={() => (showCommentModal = false)}
-                        class="px-6 py-2 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all font-bold"
-                      >
-                        Post Comment
-                      </button>
-                    </div>
+                <td class="px-6 py-4 text-text-primary">{node.role}</td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-2">
+                    <div
+                      class={cn(
+                        "w-2 h-2 rounded-full",
+                        node.status === "online"
+                          ? "bg-status-success shadow-[0_0_8px_#00ff9d]"
+                          : "bg-status-danger",
+                      )}
+                    ></div>
+                    <span class="capitalize">{node.status}</span>
                   </div>
-                </div>
-              {/if}
-            </div>
-          </div>
-        </div>
-      {:else}
-        <!-- System Alert -->
-        <div
-          data-testid="feed-post"
-          class="p-3 rounded-lg border border-l-4 border-[#1f1f1f] bg-[#111] {item.priority ===
-          'high'
-            ? 'border-l-amber-500'
-            : 'border-l-blue-500'}"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-white">{item.title}</span>
-            <span class="text-[10px] text-[#a1a1aa]">{item.time}</span>
-          </div>
-          <p class="text-xs text-[#a1a1aa] mt-1">{item.content}</p>
-        </div>
-      {/if}
-    {/each}
-  </div>
+                </td>
+                <td class="px-6 py-4 text-text-muted">{node.uptime}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden"
+                    >
+                      <div
+                        class="h-full bg-accent-primary"
+                        style="width: {node.load}"
+                      ></div>
+                    </div>
+                    <span class="text-xs">{node.load}</span>
+                  </div>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  {/if}
 </div>

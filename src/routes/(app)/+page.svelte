@@ -1,22 +1,67 @@
 <script lang="ts">
-  import MainRouter from "$lib/components/global/main-router.svelte";
+  import { page } from "$app/stores";
+  import { onMount } from "svelte";
+  import Dashboard from "$lib/components/dashboard/Dashboard.svelte";
+  import Foundry from "$lib/components/foundry/Foundry.svelte";
+  import Streams from "$lib/components/streams/Streams.svelte";
+  import Deployments from "$lib/components/deployments/Deployments.svelte";
+  import Workflows from "$lib/components/workflows/Workflows.svelte";
+  import Logs from "$lib/components/logs/Logs.svelte";
+  import Handoff from "$lib/components/handoff/Handoff.svelte";
+  import Settings from "$lib/components/settings/Settings.svelte";
+
+  // Track current hash
+  let currentHash = $state("");
+
+  onMount(() => {
+    const updateHash = () => {
+      currentHash = window.location.hash || "#/dashboard";
+      // Normalization: if hash is #/, redirect to #/dashboard
+      if (currentHash === "#/") {
+        window.location.hash = "#/dashboard";
+      }
+    };
+
+    window.addEventListener("hashchange", updateHash);
+    updateHash();
+
+    return () => window.removeEventListener("hashchange", updateHash);
+  });
+
+  // Simple router mapping
+  const routes = {
+    "#/dashboard": Dashboard,
+    "#/foundry": Foundry,
+    "#/streams": Streams,
+    "#/deployments": Deployments,
+    "#/workflows": Workflows,
+    "#/logs": Logs,
+    "#/handoff": Handoff,
+    "#/settings": Settings,
+  };
+
+  // Helper to match components (naive matching)
+  const CurrentComponent = $derived(() => {
+    // Find exact match or default to Dashboard
+    for (const [route, component] of Object.entries(routes)) {
+      if (currentHash.startsWith(route)) {
+        return component;
+      }
+    }
+    return Dashboard;
+  });
 </script>
 
-<!-- Hidden h1 for accessibility and SEO -->
-<h1 class="sr-only">Nexus Portal - Web3 Agentic Social Network</h1>
+<svelte:head>
+  <title
+    >Nexus Portal | {currentHash.replace("#/", "").toUpperCase() ||
+      "DASHBOARD"}</title
+  >
+</svelte:head>
 
-<MainRouter />
-
-<style>
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-</style>
+<div class="h-full">
+  {#if CurrentComponent()}
+    {@const Component = CurrentComponent()}
+    <Component />
+  {/if}
+</div>
