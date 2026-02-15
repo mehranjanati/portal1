@@ -1,27 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --color-bg-primary: #0a0a0a;
+  --color-bg-secondary: #111111;
+  --color-bg-tertiary: #1a1a1a;
+
+  --color-accent-primary: #00ff9d;
+  --color-accent-secondary: #00b3ff;
+
+  --color-text-primary: #eaeaea;
+  --color-text-muted: #888888;
+
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius-card: 12px;
+  --radius-button: 10px;
+
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
 
 @layer base {
-  :root {
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #111111;
-    --bg-tertiary: #1a1a1a;
-    
-    --accent-primary: #00ff9d;
-    --accent-secondary: #00b3ff;
-    
-    --text-primary: #eaeaea;
-    --text-muted: #888888;
-  }
-
   body {
     @apply bg-bg-primary text-text-primary font-sans antialiased selection:bg-accent-primary/20 selection:text-accent-primary;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-medium tracking-tight;
   }
 
@@ -45,3 +55,5 @@
     @apply bg-bg-secondary/50 backdrop-blur-md border border-white/5;
   }
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');

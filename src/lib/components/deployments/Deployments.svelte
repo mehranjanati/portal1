@@ -12,7 +12,7 @@
     } from "lucide-svelte";
     import { cn } from "$lib/utils";
 
-    let selectedDeployment = $state(null);
+    let selectedDeployment = $state<any>(null);
 
     const deployments = [
         {
@@ -101,6 +101,10 @@
                         <tr
                             class="border-b border-white/5 hover:bg-white/[0.02] cursor-pointer transition-colors"
                             onclick={() => (selectedDeployment = dep)}
+                            onkeydown={(e) =>
+                                e.key === "Enter" && (selectedDeployment = dep)}
+                            role="button"
+                            tabindex="0"
                         >
                             <td class="px-6 py-4 font-medium text-text-primary"
                                 >{dep.project}</td
@@ -159,6 +163,10 @@
     <div
         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex justify-end"
         onclick={() => (selectedDeployment = null)}
+        onkeydown={(e) => e.key === "Escape" && (selectedDeployment = null)}
+        role="button"
+        tabindex="-1"
+        aria-label="Close modal"
     >
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <!-- svelte-ignore a11y_no_static_element_interactions -->

@@ -308,7 +308,7 @@
                                 class="mt-2 bg-white/5"
                             />
                         </label>
-                        <label class="block">
+                        <div class="block">
                             <span
                                 class="text-xs uppercase font-bold text-text-muted"
                                 >Last Deploy</span
@@ -316,7 +316,7 @@
                             <span class="block text-sm text-text-primary mt-1"
                                 >2026-02-14 14:02:11</span
                             >
-                        </label>
+                        </div>
                     </div>
                     <div class="pt-4 space-y-2">
                         <Button variant="primary" class="w-full">
