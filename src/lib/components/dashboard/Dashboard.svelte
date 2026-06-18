@@ -1,245 +1,346 @@
 <script lang="ts">
-  import dashboardConfig from "../../../data/dashboard.json";
+  import { cn } from "$lib/utils";
+  import MetricCard from "$lib/components/dashboard/MetricCard.svelte";
+  import SparklineChart from "$lib/components/dashboard/SparklineChart.svelte";
+  import AlertFeed from "$lib/components/dashboard/AlertFeed.svelte";
+  import Card from "$lib/components/ui/Card.svelte";
+  import {
+    Cpu,
+    Activity,
+    ShieldCheck,
+    Zap,
+    LayoutGrid,
+    Settings2,
+    Table as TableIcon,
+    Waves,
+    Gauge as GaugeIcon,
+    CreditCard,
+  } from "lucide-svelte";
 
-  // Mock Feed Data
-  let feedItems = [
+  let activeTab = $state("overview");
+
+  const alerts = [
+    { type: "warning", message: "CI queue backlog detected", time: "2m ago" },
     {
-      id: 1,
-      type: "agent_log",
-      agentName: "AlphaTrader_V2",
-      content: "Executed limit buy order for 15 ETH @ $2,240. Slippage: 0.01%.",
-      time: "Just now",
-      status: "success",
+      type: "info",
+      message: "New agent 'DataAnalyzer' deployed",
+      time: "10m ago",
     },
-    {
-      id: 2,
-      type: "social",
-      author: "Sarah K. (Product)",
-      content:
-        "Just deployed the new marketing agent Swarm. It is already optimizing ad spend on Farcaster frames. 🚀 #AI #Marketing",
-      time: "12 mins ago",
-      avatar: "S",
-    },
-    {
-      id: 3,
-      type: "system",
-      title: "Protocol Update",
-      content:
-        "New governance proposal is live on Snapshot. Voting ends in 24h.",
-      time: "1 hour ago",
-      priority: "high",
-    },
+    { type: "success", message: "System backup completed", time: "1h ago" },
+    { type: "error", message: "Node-4 connection timeout", time: "2h ago" },
   ];
 
-  // Load announcements (keep existing logic but map to feed)
-  const announcementModules = import.meta.glob(
-    "../../../data/announcements/*.json",
-    { eager: true },
-  );
-
-  // Merge CMS announcements into feed
-  Object.values(announcementModules).forEach((mod: any) => {
-    const item = mod.default || mod;
-    feedItems.push({
-      id: Math.random(),
-      type: "system",
-      title: item.title,
-      content: item.body || item.title,
-      time: new Date(item.date).toLocaleDateString(),
-      priority: item.type === "warning" ? "high" : "normal",
-    });
-  });
+  const nodes = [
+    {
+      id: "node-1",
+      role: "Validator",
+      status: "online",
+      uptime: "14d 2h",
+      load: "42%",
+    },
+    {
+      id: "node-2",
+      role: "Ingestor",
+      status: "online",
+      uptime: "5d 1h",
+      load: "68%",
+    },
+    {
+      id: "node-3",
+      role: "Executor",
+      status: "offline",
+      uptime: "0s",
+      load: "0%",
+    },
+    {
+      id: "node-4",
+      role: "Validator",
+      status: "online",
+      uptime: "125d",
+      load: "12%",
+    },
+  ];
 </script>
 
-<div class="max-w-3xl mx-auto py-8 px-6 space-y-6">
-  <!-- "What's Happening" / Command Bar -->
-  <div class="p-4 rounded-xl border border-[#1f1f1f] bg-[#111]">
-    <div class="flex gap-4">
-      <div
-        class="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 shrink-0"
-      ></div>
-      <div class="flex-1">
-        <input
-          type="text"
-          placeholder="Broadcast update or initialize agent..."
-          class="w-full bg-transparent text-white placeholder-[#52525b] focus:outline-none text-sm py-2"
-        />
-        <div
-          class="flex items-center justify-between mt-3 pt-3 border-t border-[#1f1f1f]"
+<div class="space-y-6">
+  <!-- Header with Tabs -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div>
+        <h1
+          class="text-2xl font-bold tracking-tight text-text-primary flex items-center gap-3"
         >
-          <div class="flex gap-2">
-            <button
-              class="p-1.5 text-[#a1a1aa] hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
-              title="Attach Media"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><rect
-                  width="18"
-                  height="18"
-                  x="3"
-                  y="3"
-                  rx="2"
-                  ry="2"
-                /><circle cx="9" cy="9" r="2" /><path
-                  d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"
-                /></svg
-              >
-            </button>
-            <button
-              class="p-1.5 text-[#a1a1aa] hover:text-white hover:bg-[#1f1f1f] rounded transition-colors"
-              title="Trigger Agent"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path
-                  d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
-                /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line
-                  x1="12"
-                  x2="12"
-                  y1="19"
-                  y2="22"
-                /></svg
-              >
-            </button>
-          </div>
-          <button
-            class="px-4 py-1.5 bg-white text-black text-xs font-semibold rounded hover:bg-gray-200 transition-colors"
+          Command Center
+          <div
+            class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-status-success/10 border border-status-success/20"
           >
-            Post
-          </button>
-        </div>
+            <div
+              class="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse shadow-[0_0_8px_#00ff9d]"
+            ></div>
+            <span
+              class="text-[10px] font-bold text-status-success uppercase tracking-widest"
+              >Live</span
+            >
+          </div>
+        </h1>
+        <p class="text-sm text-text-muted mt-1">
+          Real-time monitoring and node orchestration.
+        </p>
       </div>
+    </div>
+
+    <div
+      class="flex items-center gap-2 p-1 bg-bg-secondary rounded-lg border border-white/5"
+    >
+      <button
+        onclick={() => (activeTab = "overview")}
+        class={cn(
+          "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+          activeTab === "overview"
+            ? "bg-bg-tertiary text-accent-primary shadow-sm"
+            : "text-text-muted hover:text-text-primary",
+        )}
+      >
+        Overview
+      </button>
+      <button
+        onclick={() => (activeTab = "infra")}
+        class={cn(
+          "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+          activeTab === "infra"
+            ? "bg-bg-tertiary text-accent-primary shadow-sm"
+            : "text-text-muted hover:text-text-primary",
+        )}
+      >
+        Infra
+      </button>
     </div>
   </div>
 
-  <!-- Feed Divider -->
-  <div class="flex items-center gap-4 text-xs font-medium text-[#52525b]">
-    <span class="text-white">All Activity</span>
-    <span class="cursor-pointer hover:text-white transition-colors"
-      >Agent Logs</span
-    >
-    <span class="cursor-pointer hover:text-white transition-colors"
-      >Mentions</span
-    >
-  </div>
+  {#if activeTab === "overview"}
+    <!-- Overview Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <MetricCard
+        title="Active Projects"
+        value="12"
+        trend="+2"
+        icon={LayoutGrid}
+        color="accent-primary"
+      />
+      <MetricCard
+        title="Monthly Revenue"
+        value="$12,450"
+        trend="+8.5%"
+        icon={CreditCard}
+        color="status-success"
+      />
+      <MetricCard
+        title="LiveKit Usage"
+        value="8,240 min"
+        trend="+15%"
+        icon={Waves}
+        color="accent-secondary"
+      />
+      <MetricCard
+        title="WASM Cloud Health"
+        value="99.99%"
+        trend="stable"
+        icon={ShieldCheck}
+        color="status-success"
+      />
+    </div>
 
-  <!-- Feed Stream -->
-  <div class="space-y-4">
-    {#each feedItems as item}
-      {#if item.type === "agent_log"}
-        <!-- Agent Log Card -->
-        <div
-          class="p-4 rounded-xl border border-[#1f1f1f] bg-[#111]/50 hover:bg-[#111] transition-colors group"
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[400px]">
+      <Card class="lg:col-span-8 h-full p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="font-semibold flex items-center gap-2">
+            <Activity size={18} class="text-accent-primary" />
+            Performance Latency (p95)
+          </h3>
+          <span class="text-xs text-text-muted">Last 24h</span>
+        </div>
+        <SparklineChart class="h-[280px]" title="Avg Latency" unit="ms" />
+      </Card>
+
+      <Card class="lg:col-span-4 h-full flex flex-col">
+        <div class="p-6 border-b border-white/5">
+          <h3 class="font-semibold flex items-center gap-2">
+            <Zap size={18} class="text-status-warning" />
+            System Alerts
+          </h3>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+          <AlertFeed {alerts} title="Recent Activities" />
+        </div>
+      </Card>
+    </div>
+  {:else}
+    <!-- Infra Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Gauge 1 -->
+      <Card class="p-6 flex flex-col items-center text-center space-y-4">
+        <div class="relative w-32 h-32 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90">
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              class="text-white/5"
+            />
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              stroke-dasharray="364.4"
+              stroke-dashoffset={364.4 * (1 - 0.68)}
+              class="text-accent-primary transition-all duration-1000"
+            />
+          </svg>
+          <span class="absolute text-2xl font-bold">68%</span>
+        </div>
+        <div>
+          <h3 class="font-semibold">CPU Load</h3>
+          <p class="text-xs text-text-muted">Cluster Average</p>
+        </div>
+      </Card>
+
+      <!-- Gauge 2 -->
+      <Card class="p-6 flex flex-col items-center text-center space-y-4">
+        <div class="relative w-32 h-32 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90">
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              class="text-white/5"
+            />
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              stroke-dasharray="364.4"
+              stroke-dashoffset={364.4 * (1 - 0.74)}
+              class="text-accent-secondary transition-all duration-1000"
+            />
+          </svg>
+          <span class="absolute text-2xl font-bold">74%</span>
+        </div>
+        <div>
+          <h3 class="font-semibold">Memory Usage</h3>
+          <p class="text-xs text-text-muted">High Consumption</p>
+        </div>
+      </Card>
+
+      <!-- Gauge 3 -->
+      <Card class="p-6 flex flex-col items-center text-center space-y-4">
+        <div class="relative w-32 h-32 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90">
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              class="text-white/5"
+            />
+            <circle
+              cx="64"
+              cy="64"
+              r="58"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="transparent"
+              stroke-dasharray="364.4"
+              stroke-dashoffset={364.4 * (1 - 0.41)}
+              class="text-status-warning transition-all duration-1000"
+            />
+          </svg>
+          <span class="absolute text-2xl font-bold">41%</span>
+        </div>
+        <div>
+          <h3 class="font-semibold">Disk IO</h3>
+          <p class="text-xs text-text-muted">Optimizing storage...</p>
+        </div>
+      </Card>
+    </div>
+
+    <Card class="overflow-hidden">
+      <div
+        class="p-6 border-b border-white/5 flex items-center justify-between"
+      >
+        <h3 class="font-semibold flex items-center gap-2">
+          <TableIcon size={18} class="text-text-muted" />
+          Active Nodes
+        </h3>
+        <button class="text-xs text-accent-primary hover:underline"
+          >Rebalance Cluster</button
         >
-          <div class="flex items-start gap-4">
-            <div
-              class="w-10 h-10 rounded-lg bg-emerald-900/20 border border-emerald-900/50 flex items-center justify-center shrink-0"
-            >
-              <span class="text-emerald-500 font-mono text-xs">LOG</span>
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <h4 class="text-sm font-semibold text-white">
-                  {item.agentName}
-                </h4>
-                <span class="text-[10px] text-[#52525b]">{item.time}</span>
-              </div>
-              <p
-                class="text-sm text-[#a1a1aa] mt-1 font-mono text-xs leading-relaxed"
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-white/5 text-xs uppercase font-bold text-text-muted">
+              <th class="px-6 py-3">Node ID</th>
+              <th class="px-6 py-3">Role</th>
+              <th class="px-6 py-3">Status</th>
+              <th class="px-6 py-3">Uptime</th>
+              <th class="px-6 py-3">Load</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            {#each nodes as node}
+              <tr
+                class="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
               >
-                {item.content}
-              </p>
-            </div>
-          </div>
-        </div>
-      {:else if item.type === "social"}
-        <!-- Social Post Card -->
-        <div
-          class="p-4 rounded-xl border border-[#1f1f1f] hover:border-[#333] transition-colors"
-        >
-          <div class="flex items-start gap-4">
-            <div
-              class="w-10 h-10 rounded-full bg-blue-900/30 text-blue-400 flex items-center justify-center shrink-0 text-sm font-bold"
-            >
-              {item.avatar}
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <h4 class="text-sm font-semibold text-white">{item.author}</h4>
-                <span class="text-[10px] text-[#52525b]">{item.time}</span>
-              </div>
-              <p class="text-sm text-gray-300 mt-2 leading-relaxed">
-                {item.content}
-              </p>
-
-              <!-- Post Actions -->
-              <div class="flex gap-6 mt-4">
-                <button
-                  class="flex items-center gap-2 text-[#52525b] hover:text-white text-xs group transition-colors"
+                <td class="px-6 py-4 font-mono text-accent-secondary"
+                  >{node.id}</td
                 >
-                  <svg
-                    class="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    ><path
-                      d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
-                    /></svg
-                  >
-                  <span>Like</span>
-                </button>
-                <button
-                  class="flex items-center gap-2 text-[#52525b] hover:text-white text-xs group transition-colors"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    ><path
-                      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
-                    /></svg
-                  >
-                  <span>Comment</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      {:else}
-        <!-- System Alert -->
-        <div
-          class="p-3 rounded-lg border border-l-4 border-[#1f1f1f] bg-[#111] {item.priority ===
-          'high'
-            ? 'border-l-amber-500'
-            : 'border-l-blue-500'}"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-white">{item.title}</span>
-            <span class="text-[10px] text-[#52525b]">{item.time}</span>
-          </div>
-          <p class="text-xs text-[#a1a1aa] mt-1">{item.content}</p>
-        </div>
-      {/if}
-    {/each}
-  </div>
+                <td class="px-6 py-4 text-text-primary">{node.role}</td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-2">
+                    <div
+                      class={cn(
+                        "w-2 h-2 rounded-full",
+                        node.status === "online"
+                          ? "bg-status-success shadow-[0_0_8px_#00ff9d]"
+                          : "bg-status-danger",
+                      )}
+                    ></div>
+                    <span class="capitalize">{node.status}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-text-muted">{node.uptime}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden"
+                    >
+                      <div
+                        class="h-full bg-accent-primary"
+                        style="width: {node.load}"
+                      ></div>
+                    </div>
+                    <span class="text-xs">{node.load}</span>
+                  </div>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  {/if}
 </div>

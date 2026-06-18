@@ -7,23 +7,23 @@ export default defineConfig({
 	test: {
 		// Test environment
 		environment: 'jsdom',
-		
+
 		// Global test setup
 		globals: true,
-		
+
 		// Setup files
 		setupFiles: ['./tests/setup.ts'],
-		
-		// Include patterns
-		include: ['tests/**/*.{test,spec}.{js,ts}'],
-		
+
+		// Include patterns - only unit tests
+		include: ['tests/unit/**/*.{test,spec}.{js,ts}'],
+
 		// Coverage configuration
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'json', 'html', 'lcov'],
 			exclude: [
 				'node_modules/',
-				'tests/',
+				'tests/setup.ts',
 				'*.config.{js,ts}',
 				'**/*.d.ts',
 				'**/*.spec.{js,ts}',
@@ -37,15 +37,16 @@ export default defineConfig({
 			branches: 80,
 			statements: 80,
 		},
-		
+
 		// Test timeout
 		testTimeout: 10000,
-		
+
 		// Watch mode
 		watch: false,
 	},
-	
+
 	resolve: {
+		conditions: ['browser'],
 		alias: {
 			$lib: path.resolve('./src/lib'),
 			$app: path.resolve('./.svelte-kit/runtime/app'),
