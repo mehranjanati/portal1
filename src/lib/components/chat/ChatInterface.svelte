@@ -1,19 +1,43 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { Chat } from '@ai-sdk/svelte';
+  import { Bot, User, Loader2, CheckCircle2, Globe, ArrowRight } from "lucide-svelte";
   
   let rooms = [
     { id: '1', name: 'General', lastMsg: 'Hello world!', time: '12:00' },
-    { id: '2', name: 'SuperNode Support', lastMsg: 'Need help with config', time: '11:45' },
+    { id: '2', name: 'VoltAgent', lastMsg: 'Deployment Specialist', time: 'Now' },
     { id: '3', name: 'Development', lastMsg: 'Bug fix deployed', time: 'Yesterday' }
   ];
   
-  let selectedRoomId = '1';
-  let messageInput = '';
+  let selectedRoomId = '2'; // Default to VoltAgent room
+  let chatContainer: HTMLElement;
 
-  function handleSend() {
-    if (!messageInput.trim()) return;
-    // Integration with matrix-js-sdk would go here
-    messageInput = '';
+  // --- Vercel AI SDK Integration ---
+  const chat = new Chat({
+    api: 'http://localhost:3000/api/chat', // اتصال به سرور BFF
+    initialMessages: [
+      {
+        id: "1",
+        role: "assistant",
+        content: 'Hello! I am your Nexus Agent. I can help you deploy websites. Try saying "Generate a personal portfolio".',
+      },
+    ],
+  });
+
+  let input = "";
+
+  function handleSubmit(e: Event) {
+    e.preventDefault();
+    if (!input.trim() || chat.status === 'streaming' || chat.status === 'submitted') return;
+    chat.sendMessage({ text: input });
+    input = "";
+  }
+
+  // اسکرول خودکار به پایین هنگام دریافت پیام جدید
+  $: if (chat.messages && chatContainer) {
+    setTimeout(() => {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, 50);
   }
 </script>
 
@@ -57,50 +81,101 @@
         </div>
       </header>
 
-      <div class="flex-1 p-6 overflow-y-auto space-y-6">
-        <div class="flex gap-4">
-          <div class="w-10 h-10 rounded-full bg-indigo-500 shrink-0"></div>
-          <div class="space-y-1">
-            <div class="flex items-baseline gap-2">
-              <span class="font-bold text-sm">Alice</span>
-              <span class="text-[10px] text-white/30">12:00 PM</span>
+      <div class="flex-1 p-6 overflow-y-auto space-y-6" bind:this={chatContainer}>
+        {#each chat.messages as message}
+          <div class="flex gap-4 {message.role === 'user' ? 'justify-end' : ''}">
+            {#if message.role === 'assistant'}
+              <div class="w-10 h-10 rounded-full bg-indigo-500 shrink-0 flex items-center justify-center text-white">
+                <Bot size={20} />
+              </div>
+            {/if}
+            
+            <div class="space-y-1 {message.role === 'user' ? 'items-end flex flex-col' : ''}">
+              <div class="flex items-baseline gap-2">
+                {#if message.role === 'user'}
+                  <span class="text-[10px] text-white/30">Now</span>
+                  <span class="font-bold text-sm">You</span>
+                {:else}
+                  <span class="font-bold text-sm">Nexus Agent</span>
+                  <span class="text-[10px] text-white/30">Now</span>
+                {/if}
+              </div>
+              
+              <div class="p-4 rounded-2xl max-w-lg {message.role === 'user' ? 'bg-nexus-accent text-black rounded-tr-none font-medium' : 'bg-nexus-card border border-white/10 rounded-tl-none'}">
+                {message.content}
+                
+                <!-- نمایش وضعیت ابزارها (Tool Invocations) -->
+                {#if message.toolInvocations}
+                  <div class="mt-4 space-y-2">
+                    {#each message.toolInvocations as tool}
+                      <div class="bg-black/20 rounded-lg p-3 border border-white/5 text-sm">
+                        <div class="flex items-center gap-2 text-white/70 mb-2">
+                          {#if tool.state === 'result'}
+                            <CheckCircle2 size={16} class="text-green-400" />
+                          {:else}
+                            <Loader2 size={16} class="animate-spin text-nexus-accent" />
+                          {/if}
+                          <span class="font-mono">{tool.toolName}</span>
+                        </div>
+                        
+                        {#if tool.state === 'result'}
+                          <div class="text-green-400/80 text-xs">
+                            {tool.result.message || 'Completed successfully'}
+                            {#if tool.result.url}
+                              <a href={tool.result.url} target="_blank" class="block mt-1 text-blue-400 hover:underline">
+                                {tool.result.url}
+                              </a>
+                            {/if}
+                          </div>
+                        {:else}
+                          <div class="text-white/50 text-xs">Processing request...</div>
+                        {/if}
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
             </div>
-            <div class="bg-nexus-card border border-white/10 p-4 rounded-2xl rounded-tl-none max-w-lg">
-              Welcome to the Nexus Communication Hub! 🚀
-            </div>
-          </div>
-        </div>
 
-        <div class="flex gap-4 justify-end">
-          <div class="space-y-1 items-end flex flex-col">
-            <div class="flex items-baseline gap-2">
-              <span class="text-[10px] text-white/30">12:05 PM</span>
-              <span class="font-bold text-sm">You</span>
+            {#if message.role === 'user'}
+              <div class="w-10 h-10 rounded-full bg-nexus-accent shrink-0 flex items-center justify-center text-black">
+                <User size={20} />
+              </div>
+            {/if}
+          </div>
+        {/each}
+        
+        {#if (chat.status === 'streaming' || chat.status === 'submitted') && chat.messages[chat.messages.length - 1]?.role === 'user'}
+          <div class="flex gap-4">
+            <div class="w-10 h-10 rounded-full bg-indigo-500 shrink-0 flex items-center justify-center text-white">
+              <Bot size={20} />
             </div>
-            <div class="bg-nexus-accent text-black p-4 rounded-2xl rounded-tr-none max-w-lg font-medium">
-              Thanks! The Matrix integration looks solid.
+            <div class="bg-nexus-card border border-white/10 p-4 rounded-2xl rounded-tl-none flex items-center gap-2">
+              <Loader2 size={16} class="animate-spin text-white/50" />
+              <span class="text-sm text-white/50">Thinking...</span>
             </div>
           </div>
-          <div class="w-10 h-10 rounded-full bg-nexus-accent shrink-0"></div>
-        </div>
+        {/if}
       </div>
 
       <footer class="p-6">
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-2 flex items-center gap-2">
-          <button class="w-10 h-10 rounded-xl hover:bg-white/5 flex items-center justify-center text-xl">📎</button>
+        <form on:submit={handleSubmit} class="bg-white/5 border border-white/10 rounded-2xl p-2 flex items-center gap-2">
+          <button type="button" class="w-10 h-10 rounded-xl hover:bg-white/5 flex items-center justify-center text-xl">📎</button>
           <input 
             type="text" 
-            bind:value={messageInput}
-            placeholder="Type a message..."
-            class="flex-1 bg-transparent border-none focus:ring-0 text-sm px-2"
+            bind:value={input}
+            disabled={chat.status === 'streaming' || chat.status === 'submitted'}
+            placeholder="Type a message to deploy or ask a question..."
+            class="flex-1 bg-transparent border-none focus:ring-0 text-sm px-2 disabled:opacity-50"
           />
           <button 
-            on:click={handleSend}
-            class="px-5 py-2 rounded-xl bg-nexus-accent text-black font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
+            type="submit"
+            disabled={(chat.status === 'streaming' || chat.status === 'submitted') || !input.trim()}
+            class="px-5 py-2 rounded-xl bg-nexus-accent text-black font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100"
           >
             Send
           </button>
-        </div>
+        </form>
       </footer>
     {:else}
       <div class="flex-1 flex items-center justify-center text-white/30">

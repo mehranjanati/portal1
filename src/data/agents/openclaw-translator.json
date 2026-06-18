@@ -1,0 +1,10 @@
+{
+    "name": "OpenClaw Translator",
+    "wasm_url": "https://example.com/openclaw-translator.wasm",
+    "capabilities": [
+        "chat-read",
+        "chat-write",
+        "translate"
+    ],
+    "auto_start": true
+}
