@@ -1,6 +1,8 @@
 import { writable } from 'svelte/store';
 
-const API_URL = 'http://localhost:3000';
+import { getApiBaseUrl } from '$lib/api/client';
+
+const API_URL = getApiBaseUrl();
 
 export type WorkflowStep = 'INIT' | 'GEN_SCHEMA' | 'GEN_CODE' | 'BUILDING' | 'DEPLOYING' | 'DONE';
 

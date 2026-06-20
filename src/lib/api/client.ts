@@ -7,11 +7,25 @@ export const createApiClient = () => {
 
   return {
     async fetch(endpoint: string, options: RequestInit = {}) {
-      const url = `${baseUrl}${endpoint}`;
+      // Allow passing full URLs (like for Vercel AI SDK api endpoint generation) or paths
+      const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
       
-      const defaultHeaders = {
+      const defaultHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
       };
+
+      // Add auth token if exists (for Phase 3)
+      const storedAuth = typeof localStorage !== 'undefined' ? localStorage.getItem('nexus_auth') : null;
+      if (storedAuth) {
+        try {
+          const { token } = JSON.parse(storedAuth);
+          if (token) {
+            defaultHeaders['Authorization'] = `Bearer ${token}`;
+          }
+        } catch (e) {
+          console.error('Failed to parse auth token');
+        }
+      }
 
       const config = {
         ...options,

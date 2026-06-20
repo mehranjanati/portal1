@@ -1,6 +1,7 @@
 <script lang="ts">
     import Sidebar from "$lib/components/layout/Sidebar.svelte";
     import Topbar from "$lib/components/layout/Topbar.svelte";
+    import GlobalChat from "$lib/components/chat/GlobalChat.svelte";
     import { cn } from "$lib/utils";
 
     let { children } = $props();
@@ -26,4 +27,7 @@
             {@render children()}
         </main>
     </div>
+    
+    <!-- Global Chat Widget -->
+    <GlobalChat />
 </div>
