@@ -12,6 +12,7 @@
   import Projects from "$lib/components/projects/Projects.svelte";
   import Billing from "$lib/components/billing/Billing.svelte";
   import Marketplace from "$lib/components/marketplace/Marketplace.svelte";
+  import Builder from "$lib/components/builder/Builder.svelte";
 
   // Track current hash
   let currentHash = $state("");
@@ -35,6 +36,7 @@
   const routes = {
     "#/dashboard": Dashboard,
     "#/projects": Projects,
+    "#/builder": Builder,
     "#/marketplace": Marketplace,
     "#/billing": Billing,
     "#/foundry": Foundry,
@@ -47,7 +49,7 @@
   };
 
   // Helper to match components (naive matching)
-  const CurrentComponent = $derived(() => {
+  const CurrentComponent = $derived.by(() => {
     // Find exact match or default to Dashboard
     for (const [route, component] of Object.entries(routes)) {
       if (currentHash.startsWith(route)) {
@@ -66,8 +68,7 @@
 </svelte:head>
 
 <div class="h-full">
-  {#if CurrentComponent()}
-    {@const Component = CurrentComponent()}
-    <Component />
+  {#if CurrentComponent}
+    <CurrentComponent />
   {/if}
 </div>

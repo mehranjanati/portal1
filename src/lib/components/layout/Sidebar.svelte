@@ -1,7 +1,6 @@
 <script lang="ts">
     import { cn } from "$lib/utils";
     import { page } from "$app/stores";
-    import { base } from "$app/paths";
     import {
         LayoutGrid,
         Cpu,
@@ -11,6 +10,7 @@
         Phone,
         Settings,
         FolderPlus,
+        Blocks,
         CreditCard,
         ChevronLeft,
         ChevronRight,
@@ -24,6 +24,7 @@
     const navigation = [
         { label: "Dashboard", icon: LayoutGrid, route: "#/dashboard" },
         { label: "Projects", icon: FolderPlus, route: "#/projects" },
+        { label: "Builder", icon: Blocks, route: "#/builder" },
         { label: "Marketplace", icon: ShoppingBag, route: "#/marketplace" },
         { label: "Agent Foundry", icon: Cpu, route: "#/foundry" },
         { label: "Billing", icon: CreditCard, route: "#/billing" },
@@ -37,6 +38,10 @@
 
     function toggleCollapse() {
         collapsed = !collapsed;
+    }
+
+    function isRouteActive(route: string) {
+        return $page.url.hash === route || $page.url.pathname === route;
     }
 </script>
 
@@ -64,14 +69,11 @@
     <!-- Navigation -->
     <nav class="flex-1 py-6 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
         {#each navigation as item}
-            {@const isActive =
-                $page.url.hash === item.route ||
-                $page.url.pathname === item.route}
             <a
                 href={item.route}
                 class={cn(
                     "flex items-center px-3 py-2.5 rounded-button transition-all group relative",
-                    isActive
+                    isRouteActive(item.route)
                         ? "bg-accent-primary/10 text-accent-primary"
                         : "text-text-muted hover:text-text-primary hover:bg-white/5",
                 )}
@@ -80,7 +82,7 @@
                 <item.icon
                     class={cn(
                         "h-5 w-5 shrink-0",
-                        isActive
+                        isRouteActive(item.route)
                             ? "text-accent-primary"
                             : "text-text-muted group-hover:text-text-primary",
                     )}
@@ -93,7 +95,7 @@
                     >
                 {/if}
 
-                {#if isActive && !collapsed}
+                {#if isRouteActive(item.route) && !collapsed}
                     <div
                         class="absolute right-2 w-1.5 h-1.5 rounded-full bg-accent-primary shadow-[0_0_8px_rgba(0,255,157,0.5)]"
                     ></div>

@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { getApiBaseUrl } from "$lib/api/client";
   import { cn } from "$lib/utils";
+  import BackendStatusIndicator from "$lib/components/common/BackendStatusIndicator.svelte";
   import MetricCard from "$lib/components/dashboard/MetricCard.svelte";
   import SparklineChart from "$lib/components/dashboard/SparklineChart.svelte";
   import AlertFeed from "$lib/components/dashboard/AlertFeed.svelte";
@@ -17,7 +20,144 @@
     CreditCard,
   } from "lucide-svelte";
 
+  type StackCheckStatus = "connected" | "connecting" | "disconnected" | "error";
+  type StackCheck = {
+    name: string;
+    description: string;
+    url: string;
+    status: StackCheckStatus;
+    detail: string;
+  };
+
   let activeTab = $state("overview");
+  let isCheckingStack = $state(false);
+  let stackLastChecked = $state("");
+
+  const apiBaseUrl = getApiBaseUrl();
+  const chatApiUrl =
+    import.meta.env.VITE_CHAT_API_URL || "http://localhost:3001/api/chat";
+
+  let stackChecks = $state<StackCheck[]>([
+    {
+      name: "Go Gateway",
+      description: "Core backend health via /internal/health",
+      url: `${apiBaseUrl}/internal/health`,
+      status: "connecting",
+      detail: "Waiting for first check...",
+    },
+    {
+      name: "Internal Tools",
+      description: "Phase 1 contract via /internal/tools/manifest",
+      url: `${apiBaseUrl}/internal/tools/manifest`,
+      status: "connecting",
+      detail: "Waiting for first check...",
+    },
+    {
+      name: "Workflows",
+      description: "Read model surface via /workflows",
+      url: `${apiBaseUrl}/workflows`,
+      status: "connecting",
+      detail: "Waiting for first check...",
+    },
+    {
+      name: "BFF Chat",
+      description: "Edge chat entry via /api/health",
+      url: chatApiUrl.replace(/\/api\/chat$/, "/api/health"),
+      status: "connecting",
+      detail: "Waiting for first check...",
+    },
+  ]);
+
+  const connectedCount = $derived.by(
+    () => stackChecks.filter((check) => check.status === "connected").length,
+  );
+  const stackSummary = $derived.by(
+    () => `${connectedCount}/${stackChecks.length} surfaces connected`,
+  );
+
+  onMount(() => {
+    void refreshStackHealth();
+  });
+
+  async function checkEndpoint(check: StackCheck): Promise<StackCheck> {
+    try {
+      const response = await fetch(check.url);
+      if (!response.ok) {
+        return {
+          ...check,
+          status: "error",
+          detail: `HTTP ${response.status} ${response.statusText}`,
+        };
+      }
+
+      let payload: unknown = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+
+      let detail = "Reachable";
+      if (check.name === "Go Gateway") {
+        const service = typeof payload === "object" && payload && "service" in payload
+          ? String(payload.service)
+          : "go-gateway";
+        detail = `${service} is healthy`;
+      } else if (check.name === "Internal Tools") {
+        const toolCount =
+          typeof payload === "object" &&
+          payload &&
+          "tools" in payload &&
+          Array.isArray(payload.tools)
+            ? payload.tools.length
+            : 0;
+        detail = `${toolCount} tools advertised`;
+      } else if (check.name === "Workflows") {
+        detail = Array.isArray(payload)
+          ? `${payload.length} workflow records available`
+          : "Workflow surface reachable";
+      } else if (check.name === "BFF Chat") {
+        const service = typeof payload === "object" && payload && "service" in payload
+          ? String(payload.service)
+          : "bff";
+        detail = `${service} is healthy`;
+      }
+
+      return {
+        ...check,
+        status: "connected",
+        detail,
+      };
+    } catch (error) {
+      return {
+        ...check,
+        status: "error",
+        detail: error instanceof Error ? error.message : "Request failed",
+      };
+    }
+  }
+
+  async function refreshStackHealth() {
+    isCheckingStack = true;
+    stackChecks = stackChecks.map((check) => ({
+      ...check,
+      status: "connecting",
+      detail: "Checking...",
+    }));
+
+    const results = await Promise.all(stackChecks.map(checkEndpoint));
+    stackChecks = results;
+    stackLastChecked = new Date().toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    isCheckingStack = false;
+  }
+
+  function goTo(hash: string) {
+    window.location.hash = hash;
+  }
 
   const alerts = [
     { type: "warning", message: "CI queue backlog detected", time: "2m ago" },
@@ -116,6 +256,81 @@
       </button>
     </div>
   </div>
+
+  <Card class="p-6 space-y-5 border border-white/5 bg-bg-secondary/20">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+      <div class="space-y-2">
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-semibold">MVP Connection Status</h2>
+          <span class="text-xs text-text-muted">{stackSummary}</span>
+        </div>
+        <p class="text-sm text-text-muted max-w-3xl">
+          This tracks the real path you want to see in the frontend: portal surfaces,
+          the internal tools contract, workflow read model, and BFF health.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button
+          class="px-3 py-1.5 text-sm rounded-md border border-white/10 text-text-primary hover:border-accent-primary/30 hover:text-accent-primary transition-colors"
+          onclick={refreshStackHealth}
+          disabled={isCheckingStack}
+        >
+          {isCheckingStack ? "Checking..." : "Refresh Status"}
+        </button>
+        <button
+          class="px-3 py-1.5 text-sm rounded-md border border-white/10 text-text-primary hover:border-accent-primary/30 hover:text-accent-primary transition-colors"
+          onclick={() => goTo("#/builder")}
+        >
+          Open Builder
+        </button>
+        <button
+          class="px-3 py-1.5 text-sm rounded-md border border-white/10 text-text-primary hover:border-accent-primary/30 hover:text-accent-primary transition-colors"
+          onclick={() => goTo("#/workflows")}
+        >
+          Open Workflows
+        </button>
+        <button
+          class="px-3 py-1.5 text-sm rounded-md border border-white/10 text-text-primary hover:border-accent-primary/30 hover:text-accent-primary transition-colors"
+          onclick={() => goTo("#/logs")}
+        >
+          Open Logs
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      {#each stackChecks as check}
+        <div class="rounded-xl border border-white/5 bg-bg-primary/40 p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-sm font-semibold">{check.name}</div>
+              <div class="mt-1 text-xs text-text-muted">{check.description}</div>
+            </div>
+            <BackendStatusIndicator name={check.status} status={check.status} />
+          </div>
+
+          <div class="text-xs text-text-muted break-all">{check.url}</div>
+          <div
+            class={cn(
+              "text-sm",
+              check.status === "connected"
+                ? "text-status-success"
+                : check.status === "error"
+                  ? "text-status-danger"
+                  : "text-text-muted",
+            )}
+          >
+            {check.detail}
+          </div>
+        </div>
+      {/each}
+    </div>
+
+    <div class="text-xs text-text-muted">
+      Last checked:
+      <span class="text-text-primary">{stackLastChecked || "not checked yet"}</span>
+    </div>
+  </Card>
 
   {#if activeTab === "overview"}
     <!-- Overview Grid -->

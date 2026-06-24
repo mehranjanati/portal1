@@ -1,55 +1,63 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
-    import {
-        Search,
-        Filter,
-        Copy,
-        Pin,
-        Download,
-        Terminal,
-        ChevronDown,
-    } from "lucide-svelte";
+    import { Search, Copy, Pin, Download, ChevronDown } from "lucide-svelte";
     import { cn } from "$lib/utils";
+    import { superNode, type WorkflowLogEntry } from "$lib/services/supernode";
 
-    const logs = [
-        {
-            time: "2026-02-15 14:02:01",
-            level: "INFO",
-            service: "AGENT_FOUNDRY",
-            message: "Build initialized for project 'alpha-v1'",
-            correlationId: "req-9218",
-        },
-        {
-            time: "2026-02-15 14:02:44",
-            level: "WARN",
-            service: "BENTHOS_BRIDGE",
-            message: "Retrying connection to Kafka cluster A (Attempt 2/5)",
-            correlationId: "req-9219",
-        },
-        {
-            time: "2026-02-15 14:03:12",
-            level: "ERROR",
-            service: "WASM_RUNTIME",
-            message:
-                "Memory access out of bounds in module 'finance_processor'",
-            correlationId: "req-9220",
-        },
-        {
-            time: "2026-02-15 14:03:15",
-            level: "INFO",
-            service: "SYSTEM_CORE",
-            message: "Autoscaling: Triggered scale-down for cluster 'beta'",
-            correlationId: "req-9221",
-        },
-        {
-            time: "2026-02-15 14:03:22",
-            level: "DEBUG",
-            service: "API_GATEWAY",
-            message: "GET /v1/status - Handled in 4.2ms",
-            correlationId: "req-9222",
-        },
-    ];
+    let logs = $state<WorkflowLogEntry[]>([]);
+    let searchTerm = $state("");
+    let isLoading = $state(true);
+    let errorMessage = $state("");
+
+    onMount(() => {
+        void loadLogs();
+    });
+
+    async function loadLogs() {
+        isLoading = true;
+        errorMessage = "";
+
+        try {
+            logs = await superNode.listWorkflowLogs();
+        } catch (error) {
+            errorMessage =
+                error instanceof Error ? error.message : "Failed to load logs.";
+            logs = [];
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    const filteredLogs = $derived.by(() => {
+        const query = searchTerm.trim().toLowerCase();
+        if (!query) return logs;
+
+        return logs.filter((log) =>
+            [log.message, log.service, log.workflowId, log.level]
+                .filter(Boolean)
+                .some((value) => value.toLowerCase().includes(query)),
+        );
+    });
+
+    function formatTime(value: string): string {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return new Intl.DateTimeFormat("en-GB", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        }).format(date);
+    }
+
+    async function copyText(value: string) {
+        if (!value || !navigator?.clipboard) return;
+        await navigator.clipboard.writeText(value);
+    }
 </script>
 
 <div class="space-y-6 h-full flex flex-col">
@@ -67,6 +75,7 @@
                 variant="outline"
                 size="sm"
                 class="gap-2 border-white/5 bg-white/5"
+                onclick={loadLogs}
             >
                 <Download size={14} /> Export CSV
             </Button>
@@ -94,6 +103,7 @@
                 <input
                     placeholder="Search logs by message, service or ID..."
                     class="w-full bg-bg-primary/50 border border-white/10 rounded-md py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-accent-primary/40"
+                    bind:value={searchTerm}
                 />
             </div>
             <div class="flex gap-2">
@@ -116,40 +126,57 @@
         </div>
 
         <div class="flex-1 overflow-y-auto font-mono text-[12px] p-2 space-y-1">
-            {#each logs as log}
-                <div
-                    class="grid grid-cols-[180px_80px_140px_1fr_120px] gap-4 p-2 rounded hover:bg-white/5 group border border-transparent hover:border-white/5 transition-all"
-                >
-                    <span class="text-text-muted">{log.time}</span>
-                    <span
-                        class={cn(
-                            "font-bold",
-                            log.level === "ERROR"
-                                ? "text-status-danger"
-                                : log.level === "WARN"
-                                  ? "text-status-warning"
-                                  : log.level === "INFO"
-                                    ? "text-accent-secondary"
-                                    : "text-text-muted opacity-50",
-                        )}>{log.level}</span
-                    >
-                    <span class="text-accent-primary/70">{log.service}</span>
-                    <span
-                        class="text-text-primary whitespace-nowrap overflow-hidden text-ellipsis"
-                        >{log.message}</span
-                    >
-                    <div
-                        class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                        <button class="text-text-muted hover:text-white"
-                            ><Copy size={12} /></button
-                        >
-                        <button class="text-text-muted hover:text-white"
-                            ><Pin size={12} /></button
-                        >
-                    </div>
+            {#if errorMessage}
+                <div class="p-3 text-sm text-status-danger">{errorMessage}</div>
+            {:else if isLoading}
+                <div class="p-3 text-sm text-text-muted">Loading workflow logs...</div>
+            {:else if filteredLogs.length === 0}
+                <div class="p-3 text-sm text-text-muted">
+                    No workflow logs yet. Start a workflow from chat to populate this stream.
                 </div>
-            {/each}
+            {:else}
+                {#each filteredLogs as log}
+                    <div
+                        class="grid grid-cols-[180px_80px_160px_1fr_140px] gap-4 p-2 rounded hover:bg-white/5 group border border-transparent hover:border-white/5 transition-all"
+                    >
+                        <span class="text-text-muted">{formatTime(log.time)}</span>
+                        <span
+                            class={cn(
+                                "font-bold",
+                                log.level === "ERROR"
+                                    ? "text-status-danger"
+                                    : log.level === "WARN"
+                                      ? "text-status-warning"
+                                      : log.level === "INFO"
+                                        ? "text-accent-secondary"
+                                        : "text-text-muted opacity-50",
+                            )}>{log.level}</span
+                        >
+                        <span class="text-accent-primary/70">{log.service}</span>
+                        <span
+                            class="text-text-primary whitespace-nowrap overflow-hidden text-ellipsis"
+                            >{log.message}</span
+                        >
+                        <div
+                            class="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <button
+                                class="text-text-muted hover:text-white"
+                                onclick={() => copyText(log.message)}
+                            >
+                                <Copy size={12} />
+                            </button>
+                            <button
+                                class="text-text-muted hover:text-white"
+                                onclick={() => copyText(log.workflowId)}
+                            >
+                                <Pin size={12} />
+                            </button>
+                            <span class="text-[10px] text-text-muted">{log.workflowId}</span>
+                        </div>
+                    </div>
+                {/each}
+            {/if}
         </div>
     </Card>
 </div>
