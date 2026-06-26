@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { cn } from "$lib/utils";
+    import { appHashToPageName, currentAppHash } from "$lib/utils";
     import {
         Search,
         Bell,
@@ -20,16 +20,14 @@
 
     onMount(() => {
         const updateHash = () => {
-            currentHash = window.location.hash || "#/dashboard";
+            currentHash = currentAppHash();
         };
         window.addEventListener("hashchange", updateHash);
         updateHash();
         return () => window.removeEventListener("hashchange", updateHash);
     });
 
-    const pageTitle = $derived(
-        currentHash.replace("#/", "").split("?")[0] || "dashboard",
-    );
+    const pageTitle = $derived(appHashToPageName(currentHash));
 </script>
 
 <header

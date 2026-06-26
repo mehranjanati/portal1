@@ -112,23 +112,8 @@
         } catch (e) {
             console.error(e);
             manifestError = e instanceof Error ? e.message : "Failed to load manifest.";
-            const mockData: VoltAgentManifest = {
-                version: "1.0.0",
-                tools: [
-                    {
-                        name: DEPLOY_TOOL_NAME,
-                        description: "Deploy a website",
-                        parameters: {},
-                    },
-                    {
-                        name: "system__query_database",
-                        description: "Query the database",
-                        parameters: {},
-                    },
-                ],
-            };
-            manifest = mockData;
-            selectTool(DEPLOY_TOOL_NAME);
+            manifest = null;
+            selectedToolName = null;
         } finally {
             isLoadingManifest = false;
         }
@@ -274,7 +259,7 @@
         <div>
             <h1 class="text-2xl font-semibold">VoltAgent Builder</h1>
             <p class="text-sm text-[#a1a1aa]">
-                Trigger `deploy_website`, watch workflow progress, and jump into logs without leaving the SPA.
+                Trigger the primary MVP deploy flow, watch workflow progress, and inspect artifacts without leaving the SPA.
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -283,10 +268,10 @@
                 onclick={loadManifest}
                 disabled={isLoadingManifest}
             >
-                {isLoadingManifest ? "Refreshing..." : "Reload Manifest"}
+                {isLoadingManifest ? "Refreshing..." : "Refresh Contract"}
             </Button>
             <Button variant="outline" onclick={() => loadSupportData()}>
-                Refresh Context
+                Refresh Workflow Data
             </Button>
             <Button variant="outline" onclick={() => goTo("#/workflows")}>
                 Open Workflows
@@ -346,11 +331,14 @@
     {#if manifestError}
         <div class="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             {manifestError}
+            <div class="mt-2 text-xs text-red-200/80">
+                Builder no longer falls back to mock tools. Restore the backend contract to continue.
+            </div>
         </div>
     {/if}
 
     {#if supportDataError}
-        <div class="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <div class="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
             {supportDataError}
         </div>
     {/if}
@@ -361,7 +349,7 @@
                 <CardTitle class="text-sm">Tool Catalog</CardTitle>
                 <Input bind:value={search} placeholder="Search tools..." />
                 <div class="text-[10px] text-[#52525b]">
-                    Select `deploy_website` to see the full MVP flow.
+                    `deploy_website` is the only product-grade path in the current MVP.
                 </div>
             </CardHeader>
 
@@ -421,7 +409,7 @@
                                 </div>
                                 <div class="mt-1 text-sm text-white">
                                     {isDeployToolSelected
-                                        ? "Trigger a deployment and stream its workflow context here."
+                                        ? "Trigger the main deploy workflow and follow its status here."
                                         : "Run the selected internal tool with the payload below."}
                                 </div>
                                 <div class="mt-1 text-xs text-[#a1a1aa]">
@@ -433,7 +421,7 @@
 
                             <div class="flex flex-wrap items-center gap-2">
                                 <Button onclick={executeSelectedTool} disabled={!selectedTool || isExecuting}>
-                                    {isExecuting ? "Executing..." : isDeployToolSelected ? "Trigger Deploy" : "Run Tool"}
+                                    {isExecuting ? "Executing..." : isDeployToolSelected ? "Start MVP Deploy" : "Run Tool"}
                                 </Button>
                                 {#if workflowId}
                                     <Button variant="outline" onclick={() => goTo("#/workflows")}>
@@ -503,7 +491,7 @@
                 <CardHeader class="space-y-2">
                     <CardTitle class="text-sm">Execution Output</CardTitle>
                     <div class="text-xs text-[#a1a1aa]">
-                        Result envelope from the internal tools contract.
+                        Raw result from the current internal tools contract.
                     </div>
                 </CardHeader>
 
@@ -566,6 +554,26 @@
                             </div>
                         {:else}
                             <div class="text-xs text-[#a1a1aa]">Workflow started, waiting for logs...</div>
+                        {/if}
+
+                        {#if latestWorkflowStatus.artifacts}
+                            <div class="mt-4 flex flex-col gap-2">
+                                {#if latestWorkflowStatus.artifacts.liveUrl}
+                                    <a href={latestWorkflowStatus.artifacts.liveUrl} target="_blank" rel="noreferrer" class="text-xs text-indigo-400 hover:underline">
+                                        Open Live URL
+                                    </a>
+                                {/if}
+                                {#if latestWorkflowStatus.artifacts.previewUrl}
+                                    <a href={latestWorkflowStatus.artifacts.previewUrl} target="_blank" rel="noreferrer" class="text-xs text-emerald-400 hover:underline">
+                                        Open Preview URL
+                                    </a>
+                                {/if}
+                                {#if latestWorkflowStatus.artifacts.repoUrl}
+                                    <a href={latestWorkflowStatus.artifacts.repoUrl} target="_blank" rel="noreferrer" class="text-xs text-gray-400 hover:underline">
+                                        View Source Repository
+                                    </a>
+                                {/if}
+                            </div>
                         {/if}
                     {:else}
                         <div class="text-xs text-[#a1a1aa]">

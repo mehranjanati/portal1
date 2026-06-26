@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { cn } from "$lib/utils";
+    import { cn, normalizeAppHash } from "$lib/utils";
     import { page } from "$app/stores";
     import {
         LayoutGrid,
@@ -41,7 +41,7 @@
     }
 
     function isRouteActive(route: string) {
-        return $page.url.hash === route || $page.url.pathname === route;
+        return normalizeAppHash($page.url.hash) === route;
     }
 </script>
 

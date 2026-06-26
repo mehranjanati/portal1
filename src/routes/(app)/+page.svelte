@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { onMount } from "svelte";
+  import { appHashToPageName, currentAppHash } from "$lib/utils";
   import Dashboard from "$lib/components/dashboard/Dashboard.svelte";
   import Foundry from "$lib/components/foundry/Foundry.svelte";
   import Streams from "$lib/components/streams/Streams.svelte";
@@ -19,10 +20,11 @@
 
   onMount(() => {
     const updateHash = () => {
-      currentHash = window.location.hash || "#/dashboard";
-      // Normalization: if hash is #/, redirect to #/dashboard
-      if (currentHash === "#/") {
-        window.location.hash = "#/dashboard";
+      const normalizedHash = currentAppHash();
+      currentHash = normalizedHash;
+
+      if (window.location.hash !== normalizedHash) {
+        window.location.hash = normalizedHash;
       }
     };
 
@@ -62,8 +64,7 @@
 
 <svelte:head>
   <title
-    >Nexus Portal | {currentHash.replace("#/", "").toUpperCase() ||
-      "DASHBOARD"}</title
+    >Nexus Portal | {appHashToPageName(currentHash).toUpperCase()}</title
   >
 </svelte:head>
 

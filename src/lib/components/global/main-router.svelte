@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Dashboard from "$lib/components/dashboard/Dashboard.svelte";
-  import Chat from "$lib/components/chat/ChatInterface.svelte";
+  import Chat from "$lib/components/chat/GlobalChat.svelte";
   import Meet from "$lib/components/meet/SessionInterface.svelte";
   import CMS from "$lib/components/global/cms-view.svelte";
   import Builder from "$lib/components/builder/Builder.svelte";

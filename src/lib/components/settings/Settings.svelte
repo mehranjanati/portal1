@@ -14,6 +14,7 @@
         Save,
         AlertCircle,
         User,
+        Zap,
     } from "lucide-svelte";
     import { cn } from "$lib/utils";
 

@@ -2,6 +2,7 @@ import { getApiBaseUrl } from '$lib/api/client';
 
 const API_URL = getApiBaseUrl();
 const INTERNAL_TOOLS_BASE = `${API_URL}/internal/tools`;
+const DEMO_MODE_ENABLED = import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
 
 export type WorkflowStep = 'INIT' | 'GEN_SCHEMA' | 'GEN_CODE' | 'BUILDING' | 'DEPLOYING' | 'DONE';
 
@@ -14,6 +15,7 @@ export interface WorkflowStatus {
         projectId: string;
         liveUrl?: string;
         previewUrl?: string;
+        repoUrl?: string;
     };
     error?: string;
 }
@@ -37,6 +39,8 @@ export interface WorkflowExecution {
         projectId: string;
         template?: string;
         liveUrl?: string;
+        previewUrl?: string;
+        repoUrl?: string;
         message?: string;
     };
     error?: string;
@@ -60,11 +64,24 @@ type ToolExecutionResult = {
     status?: string;
     current_step?: string;
     message?: string;
+    error?: string;
     planning_source?: string;
     run_id?: string;
     data?: Record<string, string>;
     [key: string]: unknown;
 };
+
+function getErrorMessage(err: unknown): string {
+    if (err instanceof Error && err.message) {
+        return err.message;
+    }
+
+    return 'Unknown error';
+}
+
+function createDemoWorkflowId(): string {
+    return `mock-wf-${Date.now()}`;
+}
 
 class SuperNodeService {
 
@@ -94,12 +111,18 @@ class SuperNodeService {
             if (!res.ok) throw new Error(`Backend error: ${res.statusText}`);
             return this.normalizeToolExecutionResult(await res.json());
         } catch (err) {
-            console.warn("[SuperNode] Backend unreachable, returning mock workflow ID.");
-            const workflowId = `mock-wf-${Date.now()}`;
-            return {
-                workflowId,
-                workflow_id: workflowId,
-            };
+            if (DEMO_MODE_ENABLED) {
+                console.warn("[SuperNode] Backend unreachable, demo mode enabled. Returning mock workflow ID.");
+                const workflowId = createDemoWorkflowId();
+                return {
+                    workflowId,
+                    workflow_id: workflowId,
+                    status: 'RUNNING',
+                    message: 'Demo mode is enabled, returning a simulated workflow.',
+                };
+            }
+
+            throw new Error(`Failed to execute tool via backend: ${getErrorMessage(err)}`);
         }
     }
 
@@ -112,14 +135,17 @@ class SuperNodeService {
             if (!res.ok) throw new Error(`Backend error: ${res.statusText}`);
             return await res.json();
         } catch (err) {
-            // Mock manifest for demo
-            return {
-                version: "1.0.0",
-                tools: [
-                    { name: "system__deploy_website", description: "Deploy a website", parameters: {} },
-                    { name: "system__query_database", description: "Query the database", parameters: {} }
-                ]
-            };
+            if (DEMO_MODE_ENABLED) {
+                return {
+                    version: "1.0.0",
+                    tools: [
+                        { name: "system__deploy_website", description: "Deploy a website", parameters: {} },
+                        { name: "system__query_database", description: "Query the database", parameters: {} }
+                    ]
+                };
+            }
+
+            throw new Error(`Failed to load manifest from backend: ${getErrorMessage(err)}`);
         }
     }
 
@@ -132,8 +158,11 @@ class SuperNodeService {
             if (!res.ok) throw new Error(`Backend error: ${res.statusText}`);
             return this.normalizeWorkflowStatus(await res.json(), workflowId);
         } catch (err) {
-            // Mock simulation for demo purposes if backend is missing
-            return this.simulateWorkflowProgress(workflowId);
+            if (DEMO_MODE_ENABLED) {
+                return this.simulateWorkflowProgress(workflowId);
+            }
+
+            throw new Error(`Failed to load workflow status: ${getErrorMessage(err)}`);
         }
     }
 
@@ -147,8 +176,12 @@ class SuperNodeService {
                 .filter((item: any) => item?.workflow_id || item?.workflowId)
                 .map((item: any) => this.normalizeWorkflowExecution(item));
         } catch (err) {
-            console.warn('[SuperNode] Failed to load workflow executions:', err);
-            return [];
+            if (DEMO_MODE_ENABLED) {
+                console.warn('[SuperNode] Failed to load workflow executions in demo mode:', err);
+                return [];
+            }
+
+            throw new Error(`Failed to load workflow executions: ${getErrorMessage(err)}`);
         }
     }
 
@@ -168,8 +201,12 @@ class SuperNodeService {
                 currentStep: item?.current_step ?? item?.currentStep ?? 'INIT',
             }));
         } catch (err) {
-            console.warn('[SuperNode] Failed to load workflow logs:', err);
-            return [];
+            if (DEMO_MODE_ENABLED) {
+                console.warn('[SuperNode] Failed to load workflow logs in demo mode:', err);
+                return [];
+            }
+
+            throw new Error(`Failed to load workflow logs: ${getErrorMessage(err)}`);
         }
     }
 
@@ -177,23 +214,32 @@ class SuperNodeService {
      * Lists all deployments (Project ID, URL, Status)
      */
     async listDeployments(): Promise<Deployment[]> {
-        // Mock data for now
-        return [
-            {
-                id: 'dep-1',
-                projectId: 'portfolio-dark-v1',
-                liveUrl: 'https://portfolio-dark.nexus.app',
-                status: 'live',
-                createdAt: new Date(Date.now() - 86400000).toISOString()
-            },
-            {
-                id: 'dep-2',
-                projectId: 'crypto-dashboard-alpha',
-                liveUrl: 'https://crypto-dash.nexus.app',
-                status: 'live',
-                createdAt: new Date(Date.now() - 172800000).toISOString()
-            }
-        ];
+        if (DEMO_MODE_ENABLED) {
+            return [
+                {
+                    id: 'dep-1',
+                    projectId: 'portfolio-dark-v1',
+                    liveUrl: 'https://portfolio-dark.nexus.app',
+                    status: 'live',
+                    createdAt: new Date(Date.now() - 86400000).toISOString()
+                },
+                {
+                    id: 'dep-2',
+                    projectId: 'crypto-dashboard-alpha',
+                    liveUrl: 'https://crypto-dash.nexus.app',
+                    status: 'live',
+                    createdAt: new Date(Date.now() - 172800000).toISOString()
+                }
+            ];
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/deployments`);
+            if (!res.ok) throw new Error(`Backend error: ${res.statusText}`);
+            return await res.json();
+        } catch (err) {
+            throw new Error(`Failed to load deployments: ${getErrorMessage(err)}`);
+        }
     }
 
     // --- Internal Simulation Helper ---
@@ -221,7 +267,8 @@ class SuperNodeService {
                 artifacts: {
                     projectId: 'generated-project-' + start,
                     liveUrl: 'https://generated-site.nexus.app',
-                    previewUrl: 'https://preview.nexus.app/generated-site'
+                    previewUrl: 'https://preview.nexus.app/generated-site',
+                    repoUrl: 'https://github.com/nexus-app/generated-site'
                 }
             };
         }
@@ -248,6 +295,7 @@ class SuperNodeService {
                     projectId: payload.artifacts.projectId ?? payload.artifacts.project_id ?? payload.artifacts.projectName ?? payload.artifacts.project_name ?? workflowId,
                     liveUrl: payload.artifacts.liveUrl ?? payload.artifacts.live_url ?? payload.artifacts.url,
                     previewUrl: payload.artifacts.previewUrl ?? payload.artifacts.preview_url,
+                    repoUrl: payload.artifacts.repoUrl ?? payload.artifacts.repo_url ?? payload.artifacts.github_url,
                 }
                 : undefined,
             error: payload?.error,
@@ -270,6 +318,8 @@ class SuperNodeService {
                     projectId: payload.artifacts.projectId ?? payload.artifacts.project_id ?? payload.artifacts.projectName ?? payload.artifacts.project_name ?? payload?.workflow_id ?? 'unknown',
                     template: payload.artifacts.template,
                     liveUrl: payload.artifacts.liveUrl ?? payload.artifacts.live_url ?? payload.artifacts.url,
+                    previewUrl: payload.artifacts.previewUrl ?? payload.artifacts.preview_url,
+                    repoUrl: payload.artifacts.repoUrl ?? payload.artifacts.repo_url ?? payload.artifacts.github_url,
                     message: payload.artifacts.message,
                 }
                 : undefined,
@@ -281,13 +331,18 @@ class SuperNodeService {
 
     private normalizeToolExecutionResult(payload: any): ToolExecutionResult {
         const workflowId = payload?.workflowId ?? payload?.workflow_id;
+        
+        let finalWorkflowId = typeof workflowId === 'string' && workflowId.length > 0 ? workflowId : '';
+        if (!finalWorkflowId && DEMO_MODE_ENABLED) {
+            finalWorkflowId = createDemoWorkflowId();
+        }
 
         return {
             ...(payload ?? {}),
-            workflowId: typeof workflowId === 'string' && workflowId.length > 0 ? workflowId : `mock-wf-${Date.now()}`,
+            workflowId: finalWorkflowId,
             workflow_id: typeof payload?.workflow_id === 'string'
                 ? payload.workflow_id
-                : (typeof workflowId === 'string' ? workflowId : undefined),
+                : (finalWorkflowId ? finalWorkflowId : undefined),
         };
     }
 }

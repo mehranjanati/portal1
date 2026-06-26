@@ -17,10 +17,19 @@
     } from "lucide-svelte";
     import { cn } from "$lib/utils";
 
-    let callState = $state("idle"); // idle, ringing, in_call
-    let selectedRequest = $state(null);
+    type CallState = "idle" | "ringing" | "in_call";
+    type HandoffRequest = {
+        id: string;
+        name: string;
+        reason: string;
+        urgency: "Critical" | "High" | "Medium";
+        wait: string;
+    };
 
-    const requests = [
+    let callState = $state<CallState>("idle");
+    let selectedRequest = $state<HandoffRequest | null>(null);
+
+    const requests: HandoffRequest[] = [
         {
             id: "usr-1",
             name: "User_882",

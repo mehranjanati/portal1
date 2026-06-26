@@ -1,84 +1,93 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
-    import { Plus, Folder, ArrowRight } from "lucide-svelte";
-    import ProjectBuilder from "./ProjectBuilder.svelte";
+    import { agentsStore } from "$lib/stores/agents";
+    import type { Agent } from "$lib/types";
+    import { ArrowRight, Bot, Plus } from "lucide-svelte";
 
-    let isCreating = $state(false);
+    let agents = $state<Agent[]>([]);
+
+    function goToFoundry(agentId?: string) {
+        agentsStore.selectAgent(agentId ?? null);
+        window.location.hash = "#/foundry";
+    }
+
+    onMount(() => {
+        void agentsStore.loadAgents();
+
+        return agentsStore.subscribe((state) => {
+            agents = [...state.agents].sort(
+                (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+            );
+        });
+    });
 </script>
 
 <div class="space-y-6">
-    {#if isCreating}
-        <div class="flex items-center gap-2 mb-4">
-            <button
-                onclick={() => (isCreating = false)}
-                class="text-xs text-text-muted hover:text-accent-primary transition-colors flex items-center gap-1"
-            >
-                <Folder size={12} /> Projects
-            </button>
-            <span class="text-white/10">/</span>
-            <span class="text-xs text-text-primary">New Project</span>
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">Projects</h1>
+            <p class="mt-1 text-sm text-text-muted">
+                این صفحه حالا draftهای واقعی agent را نشان می‌دهد، نه کارت‌های نمایشی ثابت.
+            </p>
         </div>
-        <ProjectBuilder onComplete={() => (isCreating = false)} />
-    {:else}
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight">Projects</h1>
-                <p class="text-sm text-text-muted mt-1">
-                    Manage and build your Super Node applications.
-                </p>
-            </div>
-            <Button
-                variant="primary"
-                class="gap-2"
-                onclick={() => (isCreating = true)}
-            >
-                <Plus size={16} /> New Project
-            </Button>
-        </div>
+        <Button variant="primary" class="gap-2" onclick={() => goToFoundry()}>
+            <Plus size={16} /> New Agent Draft
+        </Button>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Placeholder Project Card -->
-            <Card
-                class="p-6 hover:border-accent-primary/50 transition-colors cursor-pointer group relative overflow-hidden"
-            >
-                <div
-                    class="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity"
+    {#if agents.length === 0}
+        <Card class="border-dashed border-white/10 p-8 text-center">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                <Bot size={24} class="text-accent-primary" />
+            </div>
+            <h2 class="mt-4 text-lg font-semibold text-text-primary">No Agent Drafts Yet</h2>
+            <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-text-muted">
+                اگر قرار است MVP از حالت نمایشی خارج شود، نقطه شروع واقعی این است که کاربر بتواند draft agent خودش را بسازد و دوباره ببیند.
+            </p>
+            <div class="mt-5">
+                <Button variant="primary" class="gap-2" onclick={() => goToFoundry()}>
+                    <Plus size={16} /> Create First Draft
+                </Button>
+            </div>
+        </Card>
+    {:else}
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {#each agents as agent (agent.id)}
+                <Card
+                    class="group relative cursor-pointer p-6 transition-colors hover:border-accent-primary/30"
+                    onclick={() => goToFoundry(agent.id)}
                 >
-                    <ArrowRight size={18} class="text-accent-primary" />
-                </div>
-                <div class="flex items-start justify-between mb-4">
-                    <div
-                        class="p-2 rounded-lg bg-accent-primary/10 text-accent-primary"
-                    >
-                        <Folder size={24} />
+                    <div class="absolute right-0 top-0 p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                        <ArrowRight size={18} class="text-accent-primary" />
                     </div>
-                    <span
-                        class="text-xs font-mono text-text-muted bg-white/5 px-2 py-1 rounded"
-                        >SPA</span
-                    >
-                </div>
-                <h3
-                    class="font-bold text-lg group-hover:text-accent-primary transition-colors"
-                >
-                    Alpha Storefront
-                </h3>
-                <p class="text-sm text-text-muted mt-2 line-clamp-2">
-                    E-commerce PWA with performant product listing and crypto
-                    checkout.
-                </p>
-                <div
-                    class="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-text-muted"
-                >
-                    <span>Updated 2h ago</span>
-                    <span class="flex items-center gap-1">
-                        <div
-                            class="w-1.5 h-1.5 rounded-full bg-status-success"
-                        ></div>
-                         Live
-                    </span>
-                </div>
-            </Card>
+                    <div class="mb-4 flex items-start justify-between">
+                        <div class="rounded-lg bg-accent-primary/10 p-2 text-accent-primary">
+                            <Bot size={24} />
+                        </div>
+                        <span class="rounded bg-white/5 px-2 py-1 text-xs font-mono text-text-muted">
+                            {agent.type}
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-bold transition-colors group-hover:text-accent-primary">
+                        {agent.name}
+                    </h3>
+                    <p class="mt-2 line-clamp-3 text-sm text-text-muted">
+                        {agent.description || "No description yet."}
+                    </p>
+                    <div class="mt-4 border-t border-white/5 pt-4 text-xs text-text-muted">
+                        <div class="flex items-center justify-between">
+                            <span>Status</span>
+                            <span>{agent.status}</span>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between">
+                            <span>Updated</span>
+                            <span>{agent.updatedAt.toLocaleString()}</span>
+                        </div>
+                    </div>
+                </Card>
+            {/each}
         </div>
     {/if}
 </div>

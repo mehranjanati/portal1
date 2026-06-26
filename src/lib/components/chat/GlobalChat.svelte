@@ -1,16 +1,31 @@
 <script lang="ts">
   import { Chat } from '@ai-sdk/svelte';
   import { DefaultChatTransport } from 'ai';
-  import { page } from '$app/stores';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
+  import { agentsStore } from '$lib/stores/agents';
   import { superNode, type WorkflowStatus } from '$lib/services/supernode';
+  import type { Agent } from '$lib/types';
+  import { appHashToPageName, currentAppHash } from '$lib/utils';
   import { Bot, Loader2, Send, X, MessageSquare, Maximize2, Minimize2 } from 'lucide-svelte';
+
+  type WorkflowInsightItem = {
+    workflowId: string;
+    name: string;
+    status: string;
+    currentStep: string;
+    planningSource?: string;
+    lastLog?: string;
+    updatedAt?: string;
+    matchedBy?: string;
+  };
 
   let isOpen = $state(false);
   let isExpanded = $state(false);
   let chatContainer = $state<HTMLElement | null>(null);
   let messageInput = $state("");
   let workflowStatuses = $state<Record<string, WorkflowStatus>>({});
+  let currentHash = $state(currentAppHash());
+  let selectedAgent = $state<Agent | null>(null);
 
   const trackedWorkflowIds = new Set<string>();
   const workflowPollers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -45,6 +60,149 @@
     if (typeof record.workflow_id === 'string') return record.workflow_id;
     if (typeof record.workflowId === 'string') return record.workflowId;
     return null;
+  }
+
+  function extractToolResultStatus(result: unknown) {
+    if (!result || typeof result !== 'object') return null;
+
+    const record = result as Record<string, unknown>;
+    return typeof record.status === 'string' ? record.status : null;
+  }
+
+  function extractToolResultMessage(result: unknown) {
+    if (!result || typeof result !== 'object') return null;
+
+    const record = result as Record<string, unknown>;
+    if (typeof record.message === 'string' && record.message.length > 0) {
+      return record.message;
+    }
+    if (typeof record.error === 'string' && record.error.length > 0) {
+      return record.error;
+    }
+
+    return null;
+  }
+
+  function extractPlanningSource(result: unknown) {
+    if (!result || typeof result !== 'object') return null;
+
+    const record = result as Record<string, unknown>;
+    return typeof record.planning_source === 'string' ? record.planning_source : null;
+  }
+
+  function isWorkflowInsightResult(result: unknown) {
+    if (!result || typeof result !== 'object') return false;
+
+    const record = result as Record<string, unknown>;
+    return (
+      record.capability === 'workflow_insight' ||
+      Array.isArray(record.selected_workflows) ||
+      typeof record.summary === 'string'
+    );
+  }
+
+  function extractWorkflowInsightSummary(result: unknown) {
+    if (!result || typeof result !== 'object') return null;
+
+    const record = result as Record<string, unknown>;
+    return typeof record.summary === 'string' ? record.summary : null;
+  }
+
+  function extractWorkflowInsightQuestion(result: unknown) {
+    if (!result || typeof result !== 'object') return null;
+
+    const record = result as Record<string, unknown>;
+    return typeof record.question === 'string' ? record.question : null;
+  }
+
+  function extractWorkflowInsightItems(result: unknown): WorkflowInsightItem[] {
+    if (!result || typeof result !== 'object') return [];
+
+    const record = result as Record<string, unknown>;
+    if (!Array.isArray(record.selected_workflows)) {
+      return [];
+    }
+
+    return record.selected_workflows
+      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+      .map((item) => ({
+        workflowId:
+          typeof item.workflowId === 'string'
+            ? item.workflowId
+            : typeof item.workflow_id === 'string'
+              ? item.workflow_id
+              : 'unknown',
+        name: typeof item.name === 'string' ? item.name : 'workflow',
+        status: typeof item.status === 'string' ? item.status : 'RUNNING',
+        currentStep:
+          typeof item.currentStep === 'string'
+            ? item.currentStep
+            : typeof item.current_step === 'string'
+              ? item.current_step
+              : 'INIT',
+        planningSource:
+          typeof item.planningSource === 'string'
+            ? item.planningSource
+            : typeof item.planning_source === 'string'
+              ? item.planning_source
+              : undefined,
+        lastLog:
+          typeof item.lastLog === 'string'
+            ? item.lastLog
+            : typeof item.last_log === 'string'
+              ? item.last_log
+              : undefined,
+        updatedAt:
+          typeof item.updatedAt === 'string'
+            ? item.updatedAt
+            : typeof item.updated_at === 'string'
+              ? item.updated_at
+              : undefined,
+        matchedBy:
+          typeof item.matchedBy === 'string'
+            ? item.matchedBy
+            : typeof item.matched_by === 'string'
+              ? item.matched_by
+              : undefined,
+      }));
+  }
+
+  function extractWorkflowInsightTotal(result: unknown) {
+    if (!result || typeof result !== 'object') return null;
+
+    const record = result as Record<string, unknown>;
+    return typeof record.total_workflows === 'number' ? record.total_workflows : null;
+  }
+
+  function formatInsightTimestamp(value: string | undefined) {
+    if (!value) return null;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat('en-GB', {
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  }
+
+  function hasVisibleArtifacts(status: WorkflowStatus | undefined) {
+    return Boolean(
+      status?.artifacts?.liveUrl ||
+      status?.artifacts?.previewUrl ||
+      status?.artifacts?.repoUrl
+    );
+  }
+
+  function isToolResultError(result: unknown) {
+    const status = extractToolResultStatus(result);
+    if (status === 'error' || status === 'FAILED') return true;
+
+    if (!result || typeof result !== 'object') return false;
+    const record = result as Record<string, unknown>;
+    return typeof record.error === 'string' && record.error.length > 0;
   }
 
   function getWorkflowStatusTone(status: WorkflowStatus['status'] | undefined) {
@@ -133,7 +291,7 @@
         parts: [
           {
             type: "text",
-            text: "Welcome to the Nexus Communication Hub! How can I assist you today?",
+            text: "VoltAgent is ready. Select a draft agent and ask about workflow status, failures, or the latest runtime activity.",
           }
         ],
       }
@@ -155,12 +313,25 @@
     e?.preventDefault();
     if (!messageInput.trim() || chat.status === 'streaming' || chat.status === 'submitted') return;
     
-    const currentPath = $page.url.pathname;
+    const currentRoute = currentHash;
     
     chat.sendMessage({
       text: messageInput
     }, {
-      body: { data: { currentPath } }
+      body: {
+        data: {
+          currentPath: appHashToPageName(currentRoute),
+          currentRoute,
+          selectedAgent: selectedAgent
+            ? {
+                id: selectedAgent.id,
+                name: selectedAgent.name,
+                type: selectedAgent.type,
+                config: selectedAgent.config ?? {},
+              }
+            : null,
+        }
+      }
     });
     
     messageInput = "";
@@ -173,6 +344,26 @@
       }
     }, 50);
   }
+
+  onMount(() => {
+    void agentsStore.loadAgents();
+
+    const updateHash = () => {
+      currentHash = currentAppHash();
+    };
+
+    window.addEventListener('hashchange', updateHash);
+    updateHash();
+
+    const unsubscribeAgents = agentsStore.subscribe((state) => {
+      selectedAgent = state.selectedAgent;
+    });
+
+    return () => {
+      window.removeEventListener('hashchange', updateHash);
+      unsubscribeAgents();
+    };
+  });
 
   // Auto-scroll to bottom when messages update
   $effect(() => {
@@ -214,7 +405,10 @@
           </div>
           <div>
             <h2 class="font-bold text-sm text-white">VoltAgent</h2>
-            <p class="text-[10px] text-white/50">Current Page: {$page.url.pathname}</p>
+            <p class="text-[10px] text-white/50">Current Page: {appHashToPageName(currentHash)}</p>
+            {#if selectedAgent}
+              <p class="text-[10px] text-indigo-200/80">Draft: {selectedAgent.name}</p>
+            {/if}
           </div>
         </div>
         <div class="flex items-center gap-2 text-white/50">
@@ -257,8 +451,75 @@
                       </div>
                       <div class="text-white/50 pl-5">
                         {#if part.toolInvocation.state === 'result'}
-                          <span class="text-green-400">✓ Success</span>
-                          <pre class="mt-1 overflow-x-auto text-[10px]">{JSON.stringify(part.toolInvocation.result, null, 2)}</pre>
+                          {@const toolFailed = isToolResultError(part.toolInvocation.result)}
+                          {@const toolMessage = extractToolResultMessage(part.toolInvocation.result)}
+                          {@const planningSource = extractPlanningSource(part.toolInvocation.result)}
+                          {@const insightSummary = extractWorkflowInsightSummary(part.toolInvocation.result)}
+                          {@const insightQuestion = extractWorkflowInsightQuestion(part.toolInvocation.result)}
+                          {@const insightItems = extractWorkflowInsightItems(part.toolInvocation.result)}
+                          {@const insightTotal = extractWorkflowInsightTotal(part.toolInvocation.result)}
+                          <span class={toolFailed ? 'text-red-400' : 'text-green-400'}>
+                            {toolFailed ? '✗ Failed' : '✓ Success'}
+                          </span>
+                          {#if toolMessage}
+                            <div class={toolFailed ? 'mt-1 text-[10px] text-red-200' : 'mt-1 text-[10px] text-white/70'}>
+                              {toolMessage}
+                            </div>
+                          {/if}
+                          {#if isWorkflowInsightResult(part.toolInvocation.result)}
+                            <div class="mt-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 not-prose">
+                              <div class="flex items-start justify-between gap-3">
+                                <div>
+                                  <div class="text-[10px] uppercase tracking-[0.2em] text-indigo-200/70">Workflow Insight</div>
+                                  {#if insightQuestion}
+                                    <p class="mt-1 text-[10px] text-white/40">{insightQuestion}</p>
+                                  {/if}
+                                </div>
+                                {#if insightTotal !== null}
+                                  <span class="rounded-full border border-indigo-400/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-200">
+                                    {insightTotal} total
+                                  </span>
+                                {/if}
+                              </div>
+
+                              {#if insightSummary}
+                                <p class="mt-3 text-[11px] leading-5 text-white/80">{insightSummary}</p>
+                              {/if}
+
+                              {#if insightItems.length}
+                                <div class="mt-3 space-y-2">
+                                  {#each insightItems as item}
+                                    <div class="rounded-lg border border-white/10 bg-black/20 p-3">
+                                      <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                          <div class="truncate text-[11px] font-semibold text-white/90">{item.name}</div>
+                                          <div class="mt-1 truncate text-[10px] text-white/45">{item.workflowId}</div>
+                                        </div>
+                                        <span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold {getWorkflowStatusTone(item.status as WorkflowStatus['status'])}">
+                                          {item.status}
+                                        </span>
+                                      </div>
+                                      <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-white/60">
+                                        <span>Step: {item.currentStep}</span>
+                                        {#if item.planningSource}
+                                          <span>Source: {item.planningSource}</span>
+                                        {/if}
+                                        {#if item.matchedBy}
+                                          <span>Match: {item.matchedBy}</span>
+                                        {/if}
+                                        {#if item.updatedAt}
+                                          <span>Updated: {formatInsightTimestamp(item.updatedAt)}</span>
+                                        {/if}
+                                      </div>
+                                      {#if item.lastLog}
+                                        <p class="mt-2 text-[10px] leading-5 text-white/55">{item.lastLog}</p>
+                                      {/if}
+                                    </div>
+                                  {/each}
+                                </div>
+                              {/if}
+                            </div>
+                          {/if}
                           {@const workflowId = extractWorkflowId(part.toolInvocation.result)}
                           {#if workflowId}
                             {@const workflowStatus = workflowStatuses[workflowId]}
@@ -275,13 +536,53 @@
 
                               <div class="mt-3 flex items-center justify-between gap-3 text-[10px] text-white/60">
                                 <span>Step: {workflowStatus?.currentStep ?? 'INIT'}</span>
-                                {#if workflowStatus?.status === 'RUNNING'}
-                                  <span class="flex items-center gap-1 text-amber-200">
-                                    <Loader2 size={10} class="animate-spin" />
-                                    Syncing
-                                  </span>
-                                {/if}
+                                <div class="flex items-center gap-3">
+                                  {#if planningSource}
+                                    <span>Source: {planningSource}</span>
+                                  {/if}
+                                  {#if workflowStatus?.status === 'RUNNING'}
+                                    <span class="flex items-center gap-1 text-amber-200">
+                                      <Loader2 size={10} class="animate-spin" />
+                                      Syncing
+                                    </span>
+                                  {/if}
+                                </div>
                               </div>
+
+                              {#if hasVisibleArtifacts(workflowStatus)}
+                                <div class="mt-3 flex flex-wrap gap-3 text-[10px]">
+                                  {#if workflowStatus?.artifacts?.liveUrl}
+                                    <a
+                                      class="inline-flex font-semibold text-indigo-300 hover:text-indigo-200"
+                                      href={workflowStatus.artifacts.liveUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      Open deployment URL
+                                    </a>
+                                  {/if}
+                                  {#if workflowStatus?.artifacts?.previewUrl}
+                                    <a
+                                      class="inline-flex font-semibold text-emerald-300 hover:text-emerald-200"
+                                      href={workflowStatus.artifacts.previewUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      Open Preview URL
+                                    </a>
+                                  {/if}
+                                  {#if workflowStatus?.artifacts?.repoUrl}
+                                    <a
+                                      class="inline-flex font-semibold text-gray-300 hover:text-gray-200"
+                                      href={workflowStatus.artifacts.repoUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      View Source Code
+                                    </a>
+                                  {/if}
+                                </div>
+                              {/if}
 
                               {#if workflowStatus?.logs?.length}
                                 <p class="mt-2 text-[10px] leading-5 text-white/55">
@@ -289,16 +590,12 @@
                                 </p>
                               {/if}
 
-                              {#if workflowStatus?.artifacts?.liveUrl}
-                                <a
-                                  class="mt-3 inline-flex text-[10px] font-semibold text-indigo-300 hover:text-indigo-200"
-                                  href={workflowStatus.artifacts.liveUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  Open deployment URL
-                                </a>
-                              {/if}
+                              <details class="mt-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-[10px] text-white/60">
+                                <summary class="cursor-pointer select-none text-white/70">
+                                  Raw tool payload
+                                </summary>
+                                <pre class="mt-2 overflow-x-auto text-[10px]">{JSON.stringify(part.toolInvocation.result, null, 2)}</pre>
+                              </details>
                             </div>
                           {/if}
                         {:else}
@@ -339,7 +636,9 @@
             type="text"
             bind:value={messageInput}
             disabled={chat.status === 'streaming' || chat.status === 'submitted'}
-            placeholder="Ask VoltAgent..."
+            placeholder={selectedAgent
+              ? `Ask ${selectedAgent.name} about workflows, failures, or runtime status...`
+              : "Ask VoltAgent about workflow status, failures, or runtime activity..."}
             class="flex-1 bg-transparent border-none focus:ring-0 text-sm px-3 disabled:opacity-50 text-white placeholder:text-white/30"
           />
           <button

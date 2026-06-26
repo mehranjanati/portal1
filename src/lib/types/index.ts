@@ -31,6 +31,9 @@ export interface UserProfile extends User {
 
 export type AgentType = 'trading' | 'analytics' | 'social' | 'content' | 'custom';
 export type AgentStatus = 'active' | 'paused' | 'error' | 'deploying';
+export type AgentCapability = 'workflow_insight' | 'deploy_website';
+export type AgentExecutionMode = 'read_only_workflow_insight' | 'deploy_workflow';
+export type AgentResultSurface = 'global_chat' | 'foundry' | 'projects';
 
 export interface AgentPerformance {
     roi: number; // Return on Investment percentage
@@ -38,6 +41,19 @@ export interface AgentPerformance {
     uptime: number; // Uptime percentage
     successRate: number; // Success rate percentage
     lastActive: Date;
+}
+
+export interface AgentConfig {
+    systemPrompt?: string;
+    targetAudience?: string;
+    language?: string;
+    framework?: string;
+    runtime?: string;
+    source?: string;
+    capability?: AgentCapability;
+    executionMode?: AgentExecutionMode;
+    resultSurface?: AgentResultSurface;
+    tools?: AgentCapability[];
 }
 
 export interface Agent {
@@ -51,7 +67,7 @@ export interface Agent {
     createdAt: Date;
     updatedAt: Date;
     avatar?: string;
-    config?: Record<string, unknown>;
+    config?: AgentConfig;
 }
 
 export interface AgentActivity {
@@ -293,7 +309,7 @@ export interface CreateAgentInput {
     name: string;
     description?: string;
     type: AgentType;
-    config?: Record<string, unknown>;
+    config?: AgentConfig;
 }
 
 export interface CreatePostInput {

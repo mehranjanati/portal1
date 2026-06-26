@@ -1,4 +1,4 @@
-import { writable, derived, get } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import type { Agent, AgentsState, AgentStatus, AgentType } from '$lib/types';
 
 /**
@@ -6,14 +6,84 @@ import type { Agent, AgentsState, AgentStatus, AgentType } from '$lib/types';
  * Manages the state of user's agents and provides CRUD operations
  */
 
+const AGENTS_STORAGE_KEY = 'nexus_agents_store_v1';
+
+function canUseStorage() {
+    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+}
+
+function reviveAgent(raw: any): Agent {
+    return {
+        ...raw,
+        createdAt: raw?.createdAt ? new Date(raw.createdAt) : new Date(),
+        updatedAt: raw?.updatedAt ? new Date(raw.updatedAt) : new Date(),
+        performance: {
+            roi: Number(raw?.performance?.roi ?? 0),
+            trades: Number(raw?.performance?.trades ?? 0),
+            uptime: Number(raw?.performance?.uptime ?? 0),
+            successRate: Number(raw?.performance?.successRate ?? 0),
+            lastActive: raw?.performance?.lastActive
+                ? new Date(raw.performance.lastActive)
+                : new Date()
+        }
+    } as Agent;
+}
+
+function readPersistedAgents(): Agent[] {
+    if (!canUseStorage()) {
+        return [];
+    }
+
+    try {
+        const raw = localStorage.getItem(AGENTS_STORAGE_KEY);
+        if (!raw) {
+            return [];
+        }
+
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        return parsed.map(reviveAgent);
+    } catch (error) {
+        console.error('Failed to read persisted agents:', error);
+        return [];
+    }
+}
+
+function persistAgents(agents: Agent[]) {
+    if (!canUseStorage()) {
+        return;
+    }
+
+    try {
+        localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(agents));
+    } catch (error) {
+        console.error('Failed to persist agents:', error);
+    }
+}
+
+function clearPersistedAgents() {
+    if (!canUseStorage()) {
+        return;
+    }
+
+    localStorage.removeItem(AGENTS_STORAGE_KEY);
+}
+
 function createAgentsStore() {
-    const initialState: AgentsState = {
-        agents: [],
-        selectedAgent: null,
-        isLoading: false,
-        error: null,
-        filters: {}
-    };
+    function createInitialState(): AgentsState {
+        return {
+            agents: readPersistedAgents(),
+            selectedAgent: null,
+            isLoading: false,
+            error: null,
+            filters: {}
+        };
+    }
+
+    const initialState = createInitialState();
 
     const { subscribe, set, update } = writable<AgentsState>(initialState);
 
@@ -27,17 +97,14 @@ function createAgentsStore() {
             update((state) => ({ ...state, isLoading: true, error: null }));
 
             try {
-                // TODO: Replace with actual API call
-                // const response = await fetch('/api/agents');
-                // const agents = await response.json();
-
-                // Mock data for now
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                const mockAgents: Agent[] = []; // Will be populated by mock generator
+                const agents = readPersistedAgents();
 
                 update((state) => ({
                     ...state,
-                    agents: mockAgents,
+                    agents,
+                    selectedAgent: state.selectedAgent
+                        ? agents.find((agent) => agent.id === state.selectedAgent?.id) ?? null
+                        : null,
                     isLoading: false
                 }));
             } catch (error) {
@@ -56,15 +123,6 @@ function createAgentsStore() {
             update((state) => ({ ...state, isLoading: true, error: null }));
 
             try {
-                // TODO: Replace with actual API call
-                // const response = await fetch('/api/agents', {
-                //   method: 'POST',
-                //   body: JSON.stringify(agent)
-                // });
-                // const newAgent = await response.json();
-
-                // Mock implementation
-                await new Promise((resolve) => setTimeout(resolve, 300));
                 const newAgent: Agent = {
                     ...agent,
                     id: `agent-${Date.now()}`,
@@ -72,9 +130,12 @@ function createAgentsStore() {
                     updatedAt: new Date()
                 } as Agent;
 
+                persistAgents([...readPersistedAgents(), newAgent]);
+
                 update((state) => ({
                     ...state,
                     agents: [...state.agents, newAgent],
+                    selectedAgent: newAgent,
                     isLoading: false
                 }));
 
@@ -96,18 +157,34 @@ function createAgentsStore() {
             update((state) => ({ ...state, isLoading: true, error: null }));
 
             try {
-                // TODO: Replace with actual API call
-                await new Promise((resolve) => setTimeout(resolve, 300));
+                let nextAgents: Agent[] = [];
 
                 update((state) => ({
-                    ...state,
-                    agents: state.agents.map((agent) =>
-                        agent.id === id
-                            ? { ...agent, ...updates, updatedAt: new Date() }
-                            : agent
-                    ),
-                    isLoading: false
+                    ...(function () {
+                        nextAgents = state.agents.map((agent) =>
+                            agent.id === id
+                                ? {
+                                      ...agent,
+                                      ...updates,
+                                      updatedAt: new Date()
+                                  }
+                                : agent
+                        );
+
+                        const selectedAgent = state.selectedAgent
+                            ? nextAgents.find((agent) => agent.id === state.selectedAgent?.id) ?? null
+                            : null;
+
+                        return {
+                            ...state,
+                            agents: nextAgents,
+                            selectedAgent,
+                            isLoading: false
+                        };
+                    })()
                 }));
+
+                persistAgents(nextAgents);
             } catch (error) {
                 update((state) => ({
                     ...state,
@@ -125,15 +202,21 @@ function createAgentsStore() {
             update((state) => ({ ...state, isLoading: true, error: null }));
 
             try {
-                // TODO: Replace with actual API call
-                await new Promise((resolve) => setTimeout(resolve, 300));
+                let nextAgents: Agent[] = [];
 
                 update((state) => ({
-                    ...state,
-                    agents: state.agents.filter((agent) => agent.id !== id),
-                    selectedAgent: state.selectedAgent?.id === id ? null : state.selectedAgent,
-                    isLoading: false
+                    ...(function () {
+                        nextAgents = state.agents.filter((agent) => agent.id !== id);
+                        return {
+                            ...state,
+                            agents: nextAgents,
+                            selectedAgent: state.selectedAgent?.id === id ? null : state.selectedAgent,
+                            isLoading: false
+                        };
+                    })()
                 }));
+
+                persistAgents(nextAgents);
             } catch (error) {
                 update((state) => ({
                     ...state,
@@ -186,7 +269,8 @@ function createAgentsStore() {
          * Reset the store to initial state
          */
         reset() {
-            set(initialState);
+            clearPersistedAgents();
+            set(createInitialState());
         }
     };
 }

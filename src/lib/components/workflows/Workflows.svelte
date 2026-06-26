@@ -96,15 +96,12 @@
                 Temporal Workflows
             </h1>
             <p class="text-sm text-text-muted mt-1">
-                Orchestrate multi-step agent behaviors with durability.
+                Track the primary MVP workflows triggered from chat or builder.
             </p>
         </div>
         <div class="flex gap-2">
             <Button variant="outline" size="sm" class="gap-2" onclick={loadWorkflows}
-                ><RotateCcw size={14} /> Reset View</Button
-            >
-            <Button variant="primary" size="sm" class="gap-2" disabled
-                ><Play size={14} /> Run New</Button
+                ><RotateCcw size={14} /> Refresh Board</Button
             >
         </div>
     </div>
@@ -119,7 +116,7 @@
         <Card class="p-6 text-sm text-text-muted">Loading workflow executions...</Card>
     {:else if workflows.length === 0}
         <Card class="p-6 text-sm text-text-muted">
-            No persisted workflow executions yet. Trigger a deployment from chat to populate this board.
+            No workflows yet. Start a deploy from chat or builder to populate this board.
         </Card>
     {/if}
 
@@ -191,21 +188,36 @@
                             </div>
 
                             <div
-                                class="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-text-muted"
+                                class="pt-3 border-t border-white/5 flex flex-col gap-2 text-xs"
                             >
-                                <span class="flex items-center gap-1"
-                                    ><Play size={10} /> {updatedLabel(wf.updatedAt)}</span
-                                >
-                                <div class="flex gap-1">
-                                    <button
-                                        class="p-1 hover:text-accent-primary transition-colors"
-                                        ><RotateCcw size={12} /></button
+                                <div class="flex items-center justify-between text-text-muted">
+                                    <span class="flex items-center gap-1"
+                                        ><Play size={10} /> {updatedLabel(wf.updatedAt)}</span
                                     >
-                                    <button
-                                        class="p-1 hover:text-status-danger transition-colors"
-                                        ><StopCircle size={12} /></button
-                                    >
+                                    <div class="flex gap-1">
+                                        <button
+                                            class="p-1 hover:text-accent-primary transition-colors"
+                                            ><RotateCcw size={12} /></button
+                                        >
+                                        <button
+                                            class="p-1 hover:text-status-danger transition-colors"
+                                            ><StopCircle size={12} /></button
+                                        >
+                                    </div>
                                 </div>
+                                {#if wf.artifacts}
+                                    <div class="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                                        {#if wf.artifacts.liveUrl}
+                                            <a href={wf.artifacts.liveUrl} target="_blank" rel="noreferrer" class="text-[10px] font-medium text-indigo-400 hover:underline">Live URL</a>
+                                        {/if}
+                                        {#if wf.artifacts.previewUrl}
+                                            <a href={wf.artifacts.previewUrl} target="_blank" rel="noreferrer" class="text-[10px] font-medium text-emerald-400 hover:underline">Preview URL</a>
+                                        {/if}
+                                        {#if wf.artifacts.repoUrl}
+                                            <a href={wf.artifacts.repoUrl} target="_blank" rel="noreferrer" class="text-[10px] font-medium text-gray-400 hover:underline">Source Repo</a>
+                                        {/if}
+                                    </div>
+                                {/if}
                             </div>
                         </Card>
                     {/each}

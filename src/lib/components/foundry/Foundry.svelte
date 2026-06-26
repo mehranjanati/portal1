@@ -1,19 +1,41 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { cn } from "$lib/utils";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import Input from "$lib/components/ui/Input.svelte";
     import Select from "$lib/components/ui/Select.svelte";
+    import { agentsStore } from "$lib/stores/agents";
+    import type {
+        Agent,
+        AgentCapability,
+        AgentConfig,
+        AgentExecutionMode,
+        AgentResultSurface,
+        AgentType,
+    } from "$lib/types";
     import {
-        Play,
+        ArrowRight,
+        Bot,
+        FileJson,
+        FolderOpen,
         Save,
-        Code,
-        Terminal,
-        Upload,
-        FileText,
+        Sparkles,
+        Trash2,
     } from "lucide-svelte";
 
-    let activeTab = $state("files");
+    type DraftForm = {
+        name: string;
+        prompt: string;
+        targetAudience: string;
+        language: string;
+        framework: string;
+        runtime: string;
+        type: AgentType;
+        capability: AgentCapability;
+        executionMode: AgentExecutionMode;
+        resultSurface: AgentResultSurface;
+    };
 
     const languages = [
         { label: "English (EN)", value: "en" },
@@ -29,305 +51,546 @@
         { label: "Go (TinyGo WASM)", value: "go" },
         { label: "Rust (WASM)", value: "rust" },
     ];
+
+    const agentTypes = [
+        { label: "Custom", value: "custom" },
+        { label: "Analytics", value: "analytics" },
+        { label: "Content", value: "content" },
+        { label: "Social", value: "social" },
+        { label: "Trading", value: "trading" },
+    ];
+
+    const capabilities = [
+        { label: "Workflow Insight", value: "workflow_insight" },
+        { label: "Deploy Website", value: "deploy_website" },
+    ] satisfies Array<{ label: string; value: AgentCapability }>;
+
+    const executionModes = [
+        { label: "Read-Only Insight", value: "read_only_workflow_insight" },
+        { label: "Deploy Workflow", value: "deploy_workflow" },
+    ] satisfies Array<{ label: string; value: AgentExecutionMode }>;
+
+    const resultSurfaces = [
+        { label: "Global Chat", value: "global_chat" },
+        { label: "Foundry", value: "foundry" },
+        { label: "Projects", value: "projects" },
+    ] satisfies Array<{ label: string; value: AgentResultSurface }>;
+
+    let activeTab = $state("drafts");
+    let savedDrafts = $state<Agent[]>([]);
+    let selectedDraftId = $state<string | null>(null);
+    let saveError = $state("");
+    let saveMessage = $state("");
+    let isSaving = $state(false);
+
+    function createEmptyDraft(): DraftForm {
+        return {
+            name: "",
+            prompt: "",
+            targetAudience: "",
+            language: "fa",
+            framework: "svelte",
+            runtime: "go",
+            type: "custom",
+            capability: "workflow_insight",
+            executionMode: "read_only_workflow_insight",
+            resultSurface: "global_chat",
+        };
+    }
+
+    function getAgentConfig(agent: Agent): AgentConfig {
+        return agent.config ?? {};
+    }
+
+    function toolsForCapability(capability: AgentCapability): AgentCapability[] {
+        return [capability];
+    }
+
+    function deriveExecutionMode(capability: AgentCapability): AgentExecutionMode {
+        return capability === "deploy_website"
+            ? "deploy_workflow"
+            : "read_only_workflow_insight";
+    }
+
+    function draftFromAgent(agent: Agent): DraftForm {
+        const config = getAgentConfig(agent);
+        const capability =
+            config.capability === "deploy_website"
+                ? "deploy_website"
+                : "workflow_insight";
+
+        return {
+            name: agent.name ?? "",
+            prompt: config.systemPrompt ?? agent.description ?? "",
+            targetAudience: config.targetAudience ?? "",
+            language: config.language ?? "fa",
+            framework: config.framework ?? "svelte",
+            runtime: config.runtime ?? "go",
+            type: agent.type ?? "custom",
+            capability,
+            executionMode:
+                config.executionMode === "deploy_workflow" ||
+                config.executionMode === "read_only_workflow_insight"
+                    ? config.executionMode
+                    : deriveExecutionMode(capability),
+            resultSurface:
+                config.resultSurface === "foundry" || config.resultSurface === "projects"
+                    ? config.resultSurface
+                    : "global_chat",
+        };
+    }
+
+    let draft = $state<DraftForm>(createEmptyDraft());
+
+    const draftPreview = $derived.by(() =>
+        JSON.stringify(
+            {
+                name: draft.name.trim(),
+                type: draft.type,
+                prompt: draft.prompt.trim(),
+                config: {
+                    targetAudience: draft.targetAudience.trim(),
+                    language: draft.language,
+                    framework: draft.framework,
+                    runtime: draft.runtime,
+                    capability: draft.capability,
+                    executionMode: draft.executionMode,
+                    resultSurface: draft.resultSurface,
+                    tools: toolsForCapability(draft.capability),
+                    source: "foundry_draft",
+                },
+            },
+            null,
+            2,
+        ),
+    );
+
+    const selectedDraft = $derived.by(
+        () => savedDrafts.find((agent) => agent.id === selectedDraftId) ?? null,
+    );
+
+    const draftSummary = $derived.by(() => {
+        if (!draft.prompt.trim()) {
+            return "هنوز برای این agent رفتار یا کاری تعریف نشده است.";
+        }
+
+        return draft.prompt.trim();
+    });
+
+    const contractSummary = $derived.by(() => ({
+        capability: draft.capability,
+        executionMode: draft.executionMode,
+        resultSurface: draft.resultSurface,
+        tools: toolsForCapability(draft.capability),
+    }));
+
+    function startNewDraft() {
+        selectedDraftId = null;
+        draft = createEmptyDraft();
+        saveError = "";
+        saveMessage = "";
+        agentsStore.selectAgent(null);
+    }
+
+    function openDraft(agent: Agent) {
+        selectedDraftId = agent.id;
+        draft = draftFromAgent(agent);
+        saveError = "";
+        saveMessage = "";
+        agentsStore.selectAgent(agent.id);
+    }
+
+    async function removeDraft(agent: Agent) {
+        await agentsStore.deleteAgent(agent.id);
+
+        if (selectedDraftId === agent.id) {
+            startNewDraft();
+        }
+    }
+
+    async function saveDraft() {
+        saveError = "";
+        saveMessage = "";
+
+        const name = draft.name.trim();
+        const prompt = draft.prompt.trim();
+        if (!name) {
+            saveError = "نام agent الزامی است.";
+            return;
+        }
+        if (!prompt) {
+            saveError = "behavior یا prompt اصلی agent را وارد کن.";
+            return;
+        }
+
+        isSaving = true;
+
+        const config: AgentConfig = {
+            systemPrompt: prompt,
+            targetAudience: draft.targetAudience.trim(),
+            language: draft.language,
+            framework: draft.framework,
+            runtime: draft.runtime,
+            capability: draft.capability,
+            executionMode: draft.executionMode,
+            resultSurface: draft.resultSurface,
+            tools: toolsForCapability(draft.capability),
+            source: "foundry_draft",
+        };
+
+        const payload = {
+            name,
+            description: prompt,
+            type: draft.type,
+            status: "paused" as const,
+            owner: "local-user",
+            performance: {
+                roi: 0,
+                trades: 0,
+                uptime: 0,
+                successRate: 0,
+                lastActive: new Date(),
+            },
+            config,
+        };
+
+        try {
+            if (selectedDraftId) {
+                await agentsStore.updateAgent(selectedDraftId, payload);
+                saveMessage = "Agent draft به‌روزرسانی شد.";
+            } else {
+                const createdAgent = await agentsStore.addAgent(payload);
+                selectedDraftId = createdAgent?.id ?? null;
+                saveMessage = "Agent draft ذخیره شد.";
+            }
+
+            await agentsStore.loadAgents();
+            activeTab = "drafts";
+        } catch (error) {
+            saveError =
+                error instanceof Error
+                    ? error.message
+                    : "ذخیره draft با خطا مواجه شد.";
+        } finally {
+            isSaving = false;
+        }
+    }
+
+    function openBuilder() {
+        window.location.hash = "#/builder";
+    }
+
+    function openProjects() {
+        window.location.hash = "#/projects";
+    }
+
+    function handleCapabilityChange(value: AgentCapability) {
+        draft = {
+            ...draft,
+            capability: value,
+            executionMode: deriveExecutionMode(value),
+        };
+    }
+
+    onMount(() => {
+        void agentsStore.loadAgents();
+
+        return agentsStore.subscribe((state) => {
+            savedDrafts = [...state.agents].sort(
+                (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+            );
+
+            if (state.selectedAgent && state.selectedAgent.id !== selectedDraftId) {
+                selectedDraftId = state.selectedAgent.id;
+                draft = draftFromAgent(state.selectedAgent);
+            }
+        });
+    });
 </script>
 
-<div
-    class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)] min-h-[600px]"
->
-    <!-- LEFT PANEL: Config -->
-    <Card
-        class="lg:col-span-3 flex flex-col h-full bg-bg-secondary/40 backdrop-blur-sm border-white/5"
-    >
-        <div
-            class="p-4 border-b border-white/5 flex items-center justify-between"
-        >
-            <h2 class="font-semibold tracking-tight">Agent Config</h2>
-            <Button variant="ghost" size="icon" class="h-8 w-8">
-                <Save size={16} />
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+    <Card class="lg:col-span-4 border-white/5 bg-bg-secondary/40">
+        <div class="flex items-center justify-between border-b border-white/5 p-4">
+            <div>
+                <h1 class="font-semibold tracking-tight">Agent Foundry</h1>
+                <p class="mt-1 text-xs text-text-muted">
+                    این surface حالا draft واقعی agent را در مرورگر ذخیره می‌کند.
+                </p>
+            </div>
+            <Button variant="ghost" size="icon" class="h-8 w-8" onclick={startNewDraft}>
+                <Sparkles size={16} />
             </Button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-6">
-            <!-- Section: Prompt -->
-            <div class="space-y-4">
-                <div class="space-y-2">
-                    <label class="block">
-                        <span
-                            class="text-xs uppercase font-bold text-text-muted"
-                            >Project Name</span
-                        >
-                        <Input placeholder="my-agent-portal" class="mt-2" />
-                    </label>
-                    <label class="block mt-4">
-                        <span
-                            class="text-xs uppercase font-bold text-text-muted"
-                            >Use Case / Prompt</span
-                        >
-                        <textarea
-                            class="flex w-full mt-2 rounded-button bg-bg-secondary border border-white/10 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted transition-all focus:outline-none focus:ring-2 focus:ring-accent-primary/20 hover:border-white/20 min-h-[120px] resize-none"
-                            placeholder="Describe the agent's purpose, behavior, and UI..."
-                            aria-label="Agent Description"
-                        ></textarea>
-                    </label>
+        <div class="space-y-5 p-4">
+            <label class="block">
+                <span class="text-xs font-bold uppercase text-text-muted">Agent Name</span>
+                <Input bind:value={draft.name} class="mt-2" placeholder="research-assistant" />
+            </label>
+
+            <label class="block">
+                <span class="text-xs font-bold uppercase text-text-muted">Agent Type</span>
+                <div class="mt-2">
+                    <Select bind:value={draft.type} options={agentTypes} />
                 </div>
+            </label>
 
-                <div class="space-y-2">
-                    <label class="block">
-                        <span
-                            class="text-xs uppercase font-bold text-text-muted"
-                            >Target Audience</span
-                        >
-                        <Input placeholder="e.g., DeFi Traders" class="mt-2" />
-                    </label>
-                </div>
+            <label class="block">
+                <span class="text-xs font-bold uppercase text-text-muted">Use Case / Prompt</span>
+                <textarea
+                    bind:value={draft.prompt}
+                    class="mt-2 min-h-[140px] w-full rounded-button border border-white/10 bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted transition-all hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-accent-primary/20"
+                    placeholder="مثلاً: یک agent تحقیقاتی که سوال کاربر را بگیرد، از ابزارهای read-only استفاده کند و خلاصه قابل‌استفاده برگرداند."
+                ></textarea>
+            </label>
 
-                <div class="space-y-2">
-                    <label class="block">
-                        <span
-                            class="text-xs uppercase font-bold text-text-muted"
-                            >Language</span
-                        >
-                        <div class="mt-2">
-                            <Select options={languages} />
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <div class="h-px bg-white/5"></div>
-
-            <!-- Section: Tech Stack -->
-            <div class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label class="block">
-                    <span class="text-xs uppercase font-bold text-text-muted"
-                        >Tech Stack</span
-                    >
-                    <div class="space-y-3 mt-2">
+                    <span class="text-xs font-bold uppercase text-text-muted">Target Audience</span>
+                    <Input bind:value={draft.targetAudience} class="mt-2" placeholder="Analysts / Founders / Ops" />
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-text-muted">Capability</span>
+                    <div class="mt-2">
                         <Select
-                            options={frameworks}
-                            placeholder="Frontend Framework"
+                            value={draft.capability}
+                            options={capabilities}
+                            onchange={(event) =>
+                                handleCapabilityChange(
+                                    (event.currentTarget as HTMLSelectElement)
+                                        .value as AgentCapability,
+                                )}
                         />
-                        <Select options={runtimes} placeholder="WASM Runtime" />
+                    </div>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-text-muted">Language</span>
+                    <div class="mt-2">
+                        <Select bind:value={draft.language} options={languages} />
+                    </div>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-text-muted">Frontend</span>
+                    <div class="mt-2">
+                        <Select bind:value={draft.framework} options={frameworks} />
+                    </div>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-text-muted">Runtime</span>
+                    <div class="mt-2">
+                        <Select bind:value={draft.runtime} options={runtimes} />
+                    </div>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-text-muted">Execution Mode</span>
+                    <div class="mt-2">
+                        <Select bind:value={draft.executionMode} options={executionModes} />
+                    </div>
+                </label>
+                <label class="block">
+                    <span class="text-xs font-bold uppercase text-text-muted">Result Surface</span>
+                    <div class="mt-2">
+                        <Select bind:value={draft.resultSurface} options={resultSurfaces} />
                     </div>
                 </label>
             </div>
+
+            {#if saveError}
+                <div class="rounded-lg border border-status-danger/20 bg-status-danger/10 px-3 py-2 text-xs text-status-danger">
+                    {saveError}
+                </div>
+            {/if}
+
+            {#if saveMessage}
+                <div class="rounded-lg border border-accent-primary/20 bg-accent-primary/10 px-3 py-2 text-xs text-accent-primary">
+                    {saveMessage}
+                </div>
+            {/if}
         </div>
 
-        <div class="p-4 border-t border-white/5 space-y-2 bg-bg-secondary/50">
-            <Button variant="primary" class="w-full gap-2">
-                <Code size={16} />
-                Generate UI JSON
+        <div class="space-y-2 border-t border-white/5 bg-bg-secondary/50 p-4">
+            <Button variant="primary" class="w-full gap-2" loading={isSaving} onclick={saveDraft}>
+                <Save size={16} />
+                {selectedDraftId ? "Update Agent Draft" : "Save Agent Draft"}
             </Button>
-            <Button variant="ghost" class="w-full">Validate Schema</Button>
+            <div class="grid grid-cols-2 gap-2">
+                <Button variant="outline" class="w-full" onclick={startNewDraft}>New Draft</Button>
+                <Button variant="ghost" class="w-full" onclick={openProjects}>Open Projects</Button>
+            </div>
         </div>
     </Card>
 
-    <!-- CENTER PANEL: Preview -->
-    <Card
-        class="lg:col-span-6 flex flex-col h-full bg-bg-primary/50 border-white/5 relative overflow-hidden group"
-    >
-        <div
-            class="absolute inset-0 bg-grid-white/[0.02] bg-[length:16px_16px] pointer-events-none"
-        ></div>
-
-        <div
-            class="p-2 border-b border-white/5 flex items-center justify-between bg-bg-secondary/40 backdrop-blur-sm z-10"
-        >
-            <div class="flex items-center gap-2">
-                <div class="flex gap-1.5 px-2">
-                    <div
-                        class="w-2.5 h-2.5 rounded-full bg-status-danger/50"
-                    ></div>
-                    <div
-                        class="w-2.5 h-2.5 rounded-full bg-status-warning/50"
-                    ></div>
-                    <div
-                        class="w-2.5 h-2.5 rounded-full bg-status-success/50"
-                    ></div>
-                </div>
-                <div
-                    class="text-xs text-text-muted font-mono px-2 py-0.5 rounded bg-white/5 border border-white/5 min-w-[200px] text-center"
-                >
-                    localhost:3000/preview/agent-x
-                </div>
-            </div>
-            <div class="flex gap-1">
-                <Button variant="ghost" size="sm" class="h-7 text-xs"
-                    >Desktop</Button
-                >
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    class="h-7 text-xs text-text-muted">Mobile</Button
-                >
-            </div>
-        </div>
-
-        <!-- Preview Canvas -->
-        <div class="flex-1 flex items-center justify-center p-8 z-0">
-            <div class="text-center space-y-4">
-                <div
-                    class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto"
-                >
-                    <Play size={24} class="text-text-muted ml-1" />
+    <Card class="lg:col-span-5 border-white/5 bg-bg-primary/50">
+        <div class="border-b border-white/5 p-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                    <Bot size={18} class="text-accent-primary" />
                 </div>
                 <div>
-                    <h3 class="text-lg font-medium text-text-primary">
-                        Ready to Build
-                    </h3>
-                    <p class="text-sm text-text-muted mt-1 max-w-xs mx-auto">
-                        Configure your agent on the left and click "Generate
-                        Schema" to start the WASM build process.
+                    <h2 class="font-semibold text-text-primary">
+                        {draft.name.trim() || "Untitled Agent"}
+                    </h2>
+                    <p class="text-xs text-text-muted">
+                        draft محلی برای طراحی agent قبل از وصل‌شدن به orchestration واقعی
                     </p>
                 </div>
             </div>
         </div>
 
-        <!-- Build Status Bar -->
-        <div
-            class="p-3 border-t border-white/5 bg-bg-secondary/80 backdrop-blur-md flex items-center gap-4 text-xs font-mono"
-        >
-            <div class="flex items-center gap-2 text-accent-primary">
-                <div
-                    class="w-2 h-2 rounded-full bg-accent-primary animate-pulse"
-                ></div>
-                Building...
+        <div class="space-y-6 p-6">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-lg border border-white/5 bg-white/[0.03] p-4">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Type</div>
+                    <div class="mt-2 text-sm font-medium text-text-primary">{draft.type}</div>
+                </div>
+                <div class="rounded-lg border border-white/5 bg-white/[0.03] p-4">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Audience</div>
+                    <div class="mt-2 text-sm font-medium text-text-primary">
+                        {draft.targetAudience.trim() || "Not set"}
+                    </div>
+                </div>
+                <div class="rounded-lg border border-white/5 bg-white/[0.03] p-4">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Frontend</div>
+                    <div class="mt-2 text-sm font-medium text-text-primary">{draft.framework}</div>
+                </div>
+                <div class="rounded-lg border border-white/5 bg-white/[0.03] p-4">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Runtime</div>
+                    <div class="mt-2 text-sm font-medium text-text-primary">{draft.runtime}</div>
+                </div>
+                <div class="rounded-lg border border-white/5 bg-white/[0.03] p-4">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Capability</div>
+                    <div class="mt-2 text-sm font-medium text-text-primary">{contractSummary.capability}</div>
+                </div>
+                <div class="rounded-lg border border-white/5 bg-white/[0.03] p-4">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Result Surface</div>
+                    <div class="mt-2 text-sm font-medium text-text-primary">{contractSummary.resultSurface}</div>
+                </div>
             </div>
-            <div class="h-4 w-px bg-white/10"></div>
-            <div class="flex-1 text-text-muted truncate">
-                Generate -> Build -> Deploy
+
+            <div class="rounded-xl border border-white/5 bg-bg-secondary/30 p-5">
+                <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Behavior Summary</div>
+                <p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-text-primary">{draftSummary}</p>
             </div>
-            <div class="text-text-muted">v0.1.0</div>
+
+            <div class="rounded-xl border border-white/5 bg-black/20 p-5">
+                <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Execution Contract</div>
+                <div class="mt-3 space-y-2 text-sm text-text-primary">
+                    <p>Mode: <span class="font-medium">{contractSummary.executionMode}</span></p>
+                    <p>Tools: <span class="font-medium">{contractSummary.tools.join(", ")}</span></p>
+                    <p>Surface: <span class="font-medium">{contractSummary.resultSurface}</span></p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-accent-primary/10 bg-accent-primary/5 p-5">
+                <div class="text-[11px] uppercase tracking-[0.2em] text-accent-primary/80">Next Practical Step</div>
+                <p class="mt-3 text-sm leading-6 text-text-primary">
+                    بعد از ذخیره draft، این contract به `GlobalChat` و `BFF` می‌رسد تا agent انتخاب‌شده به capability واقعی خودش وصل شود، نه فقط به مسیر deploy پیش‌فرض.
+                </p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <Button variant="outline" class="gap-2" onclick={openBuilder}>
+                        Open Builder <ArrowRight size={14} />
+                    </Button>
+                    <Button variant="ghost" class="gap-2" onclick={openProjects}>
+                        <FolderOpen size={14} /> View Saved Drafts
+                    </Button>
+                </div>
+            </div>
         </div>
     </Card>
 
-    <!-- RIGHT PANEL: Artifacts -->
-    <Card
-        class="lg:col-span-3 flex flex-col h-full bg-bg-secondary/40 backdrop-blur-sm border-white/5"
-    >
+    <Card class="lg:col-span-3 border-white/5 bg-bg-secondary/40">
         <div class="flex items-center border-b border-white/5">
             <button
                 class={cn(
-                    "flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
-                    activeTab === "files"
-                        ? "border-accent-primary text-text-primary bg-white/5"
-                        : "border-transparent text-text-muted hover:text-text-primary hover:bg-white/5",
+                    "flex-1 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+                    activeTab === "drafts"
+                        ? "border-accent-primary bg-white/5 text-text-primary"
+                        : "border-transparent text-text-muted hover:bg-white/5 hover:text-text-primary",
                 )}
-                onclick={() => (activeTab = "files")}
+                onclick={() => (activeTab = "drafts")}
             >
-                Files
+                Drafts
             </button>
             <button
                 class={cn(
-                    "flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
-                    activeTab === "logs"
-                        ? "border-accent-primary text-text-primary bg-white/5"
-                        : "border-transparent text-text-muted hover:text-text-primary hover:bg-white/5",
+                    "flex-1 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+                    activeTab === "config"
+                        ? "border-accent-primary bg-white/5 text-text-primary"
+                        : "border-transparent text-text-muted hover:bg-white/5 hover:text-text-primary",
                 )}
-                onclick={() => (activeTab = "logs")}
+                onclick={() => (activeTab = "config")}
             >
-                CI Logs
+                Config
             </button>
             <button
                 class={cn(
-                    "flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
-                    activeTab === "deploy"
-                        ? "border-accent-primary text-text-primary bg-white/5"
-                        : "border-transparent text-text-muted hover:text-text-primary hover:bg-white/5",
+                    "flex-1 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+                    activeTab === "next"
+                        ? "border-accent-primary bg-white/5 text-text-primary"
+                        : "border-transparent text-text-muted hover:bg-white/5 hover:text-text-primary",
                 )}
-                onclick={() => (activeTab = "deploy")}
+                onclick={() => (activeTab = "next")}
             >
-                Deploy
+                Next
             </button>
         </div>
 
-        <div class="flex-1 overflow-hidden relative">
-            {#if activeTab === "files"}
-                <div class="p-4 space-y-2">
-                    <div
-                        class="flex items-center gap-2 text-sm text-text-primary p-2 rounded hover:bg-white/5 cursor-pointer"
-                    >
-                        <FileText size={16} class="text-accent-secondary" />
-                        index.html
+        <div class="min-h-[520px] p-4">
+            {#if activeTab === "drafts"}
+                {#if savedDrafts.length === 0}
+                    <div class="rounded-xl border border-dashed border-white/10 p-4 text-sm text-text-muted">
+                        هنوز draftی ذخیره نشده است. اولین agent ساده‌ات را از همین صفحه بساز.
                     </div>
-                    <div
-                        class="flex items-center gap-2 text-sm text-text-primary p-2 rounded hover:bg-white/5 cursor-pointer"
-                    >
-                        <FileText size={16} class="text-orange-400" />
-                        app.js
+                {:else}
+                    <div class="space-y-3">
+                        {#each savedDrafts as agent (agent.id)}
+                            <div
+                                class={cn(
+                                    "rounded-xl border p-3 transition-colors",
+                                    selectedDraftId === agent.id
+                                        ? "border-accent-primary/30 bg-accent-primary/5"
+                                        : "border-white/5 bg-white/[0.02]",
+                                )}
+                            >
+                                <button class="w-full text-left" onclick={() => openDraft(agent)}>
+                                    <div class="text-sm font-medium text-text-primary">{agent.name}</div>
+                                    <div class="mt-1 text-[11px] text-text-muted">
+                                        {agent.type} · {agent.status}
+                                    </div>
+                                    <div class="mt-2 line-clamp-2 text-xs text-text-muted">
+                                        {agent.description || "No description"}
+                                    </div>
+                                </button>
+                                <div class="mt-3 flex items-center justify-between text-[11px] text-text-muted">
+                                    <span>{agent.updatedAt.toLocaleString()}</span>
+                                    <button class="inline-flex items-center gap-1 text-status-danger" onclick={() => removeDraft(agent)}>
+                                        <Trash2 size={12} /> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        {/each}
                     </div>
-                    <div
-                        class="flex items-center gap-2 text-sm text-text-primary p-2 rounded hover:bg-white/5 cursor-pointer"
-                    >
-                        <FileText size={16} class="text-blue-400" />
-                        styles.css
+                {/if}
+            {:else if activeTab === "config"}
+                <div class="rounded-xl border border-white/5 bg-black/30 p-4">
+                    <div class="mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-text-muted">
+                        <FileJson size={14} /> Foundry Draft JSON
                     </div>
-                    <div
-                        class="flex items-center gap-2 text-sm text-text-primary p-2 rounded hover:bg-white/5 cursor-pointer"
-                    >
-                        <FileText size={16} class="text-blue-400" />
-                        config.json
-                    </div>
+                    <pre class="overflow-auto text-xs leading-6 text-text-primary">{draftPreview}</pre>
                 </div>
-            {:else if activeTab === "logs"}
-                <div
-                    class="p-4 font-mono text-xs space-y-1 text-text-muted h-full overflow-y-auto"
-                >
-                    <div class="flex gap-2">
-                        <span class="text-white/30">10:42:01</span>
-                        <span>[CI] Running build script...</span>
+            {:else}
+                <div class="space-y-4 text-sm text-text-muted">
+                    <div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                        این صفحه الان کار واقعی انجام می‌دهد: draft را ذخیره و دوباره قابل‌ویرایش می‌کند.
                     </div>
-                    <div class="flex gap-2">
-                        <span class="text-white/30">10:42:02</span>
-                        <span class="text-accent-primary"
-                            >[WASM] Optmizing binary</span
-                        >
+                    <div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                        قدم بعدی Day 3 این است که draft agent با execution mode و tool مشخص به `GlobalChat` و `BFF` وصل شود.
                     </div>
-                </div>
-            {:else if activeTab === "deploy"}
-                <div class="p-6 space-y-4">
-                    <div class="space-y-4">
-                        <label class="block">
-                            <span
-                                class="text-xs uppercase font-bold text-text-muted"
-                                >GitHub Repo</span
-                            >
-                            <Input
-                                value="github.com/my-user/agent-app"
-                                class="mt-2"
-                            />
-                        </label>
-                        <label class="block">
-                            <span
-                                class="text-xs uppercase font-bold text-text-muted"
-                                >Pages URL</span
-                            >
-                            <Input
-                                readonly
-                                value="https://my-user.github.io/agent-app"
-                                class="mt-2 bg-white/5"
-                            />
-                        </label>
-                        <div class="block">
-                            <span
-                                class="text-xs uppercase font-bold text-text-muted"
-                                >Last Deploy</span
-                            >
-                            <span class="block text-sm text-text-primary mt-1"
-                                >2026-02-14 14:02:11</span
-                            >
+                    {#if selectedDraft}
+                        <div class="rounded-xl border border-accent-primary/10 bg-accent-primary/5 p-4 text-text-primary">
+                            draft انتخاب‌شده: <span class="font-semibold">{selectedDraft.name}</span>
                         </div>
-                    </div>
-                    <div class="pt-4 space-y-2">
-                        <Button variant="primary" class="w-full">
-                            Trigger Deploy
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            class="w-full text-status-danger hover:bg-status-danger/10"
-                            >Rollback</Button
-                        >
-                    </div>
+                    {/if}
                 </div>
             {/if}
         </div>

@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
-    import { Search, Copy, Pin, Download, ChevronDown } from "lucide-svelte";
+    import { Search, Copy, Pin, RotateCcw } from "lucide-svelte";
     import { cn } from "$lib/utils";
     import { superNode, type WorkflowLogEntry } from "$lib/services/supernode";
 
@@ -77,17 +77,7 @@
                 class="gap-2 border-white/5 bg-white/5"
                 onclick={loadLogs}
             >
-                <Download size={14} /> Export CSV
-            </Button>
-            <Button
-                variant="primary"
-                size="sm"
-                class="gap-2 shadow-[0_0_15px_rgba(0,255,157,0.1)]"
-            >
-                <div
-                    class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"
-                ></div>
-                Live Tail
+                <RotateCcw size={14} /> Refresh Logs
             </Button>
         </div>
     </div>
@@ -106,22 +96,8 @@
                     bind:value={searchTerm}
                 />
             </div>
-            <div class="flex gap-2">
-                <Button
-                    variant="ghost"
-                    class="gap-2 border border-white/5 text-xs"
-                    >Service: All <ChevronDown size={12} /></Button
-                >
-                <Button
-                    variant="ghost"
-                    class="gap-2 border border-white/5 text-xs"
-                    >Level: All <ChevronDown size={12} /></Button
-                >
-                <Button
-                    variant="ghost"
-                    class="gap-2 border border-white/5 text-xs"
-                    >Time: Last 1h <ChevronDown size={12} /></Button
-                >
+            <div class="text-[11px] text-text-muted">
+                Search currently filters the loaded log snapshot by message, service, level, or workflow ID.
             </div>
         </div>
 
