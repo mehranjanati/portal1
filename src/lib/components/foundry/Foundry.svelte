@@ -112,6 +112,27 @@
             : "read_only_workflow_insight";
     }
 
+    function getCapabilityLabel(capability: AgentCapability) {
+        return capability === "deploy_website" ? "Deploy Website" : "Workflow Insight";
+    }
+
+    function getExecutionModeLabel(executionMode: AgentExecutionMode) {
+        return executionMode === "deploy_workflow"
+            ? "Deploy Workflow"
+            : "Read-Only Workflow Insight";
+    }
+
+    function getResultSurfaceLabel(resultSurface: AgentResultSurface) {
+        switch (resultSurface) {
+            case "foundry":
+                return "Foundry";
+            case "projects":
+                return "Projects";
+            default:
+                return "Global Chat";
+        }
+    }
+
     function draftFromAgent(agent: Agent): DraftForm {
         const config = getAgentConfig(agent);
         const capability =
@@ -183,6 +204,34 @@
         resultSurface: draft.resultSurface,
         tools: toolsForCapability(draft.capability),
     }));
+
+    const runtimeNarrative = $derived.by(() => {
+        if (draft.capability === "deploy_website") {
+            return {
+                title: "Deploy path is not the primary MVP flow",
+                body: "این draft هنوز برای compatibility نگه داشته می‌شود، اما use case اصلی این سری نیست. اگر هدف تو insight از workflowهاست، `workflow_insight` انتخاب درست MVP است.",
+                tone: "border-amber-500/20 bg-amber-500/10 text-amber-100",
+            };
+        }
+
+        return {
+            title: "This draft will answer with runtime insight",
+            body: "این draft در `GlobalChat` از dataهای read-only workflow و log استفاده می‌کند و باید summary قابل‌فهم، وضعیت workflow و آخرین signal را نشان بدهد.",
+            tone: "border-emerald-500/20 bg-emerald-500/10 text-emerald-100",
+        };
+    });
+
+    const resultSurfaceNarrative = $derived.by(() => {
+        if (draft.resultSurface === "projects") {
+            return "این contract در کارت‌های `Projects` هم قابل‌دیدن خواهد بود تا draft فعال و مسیر اجرا پنهان نماند.";
+        }
+
+        if (draft.resultSurface === "foundry") {
+            return "این draft نتیجه را نزدیک به خود Foundry مدل می‌کند، ولی مسیر اصلی MVP فعلاً `GlobalChat` است.";
+        }
+
+        return "نتیجه این draft باید در `GlobalChat` به‌صورت result card خوانا دیده شود، نه فقط payload خام.";
+    });
 
     function startNewDraft() {
         selectedDraftId = null;
@@ -355,7 +404,7 @@
                         <Select
                             value={draft.capability}
                             options={capabilities}
-                            onchange={(event) =>
+                            onchange={(event: Event) =>
                                 handleCapabilityChange(
                                     (event.currentTarget as HTMLSelectElement)
                                         .value as AgentCapability,
@@ -431,7 +480,7 @@
                         {draft.name.trim() || "Untitled Agent"}
                     </h2>
                     <p class="text-xs text-text-muted">
-                        draft محلی برای طراحی agent قبل از وصل‌شدن به orchestration واقعی
+                        draft محلی برای طراحی agent با contract اجرایی روشن قبل از هر orchestration پیچیده‌تر
                     </p>
                 </div>
             </div>
@@ -459,11 +508,15 @@
                 </div>
                 <div class="rounded-lg border border-white/5 bg-white/[0.03] p-4">
                     <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Capability</div>
-                    <div class="mt-2 text-sm font-medium text-text-primary">{contractSummary.capability}</div>
+                    <div class="mt-2 text-sm font-medium text-text-primary">
+                        {getCapabilityLabel(contractSummary.capability)}
+                    </div>
                 </div>
                 <div class="rounded-lg border border-white/5 bg-white/[0.03] p-4">
                     <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Result Surface</div>
-                    <div class="mt-2 text-sm font-medium text-text-primary">{contractSummary.resultSurface}</div>
+                    <div class="mt-2 text-sm font-medium text-text-primary">
+                        {getResultSurfaceLabel(contractSummary.resultSurface)}
+                    </div>
                 </div>
             </div>
 
@@ -475,16 +528,23 @@
             <div class="rounded-xl border border-white/5 bg-black/20 p-5">
                 <div class="text-[11px] uppercase tracking-[0.2em] text-text-muted">Execution Contract</div>
                 <div class="mt-3 space-y-2 text-sm text-text-primary">
-                    <p>Mode: <span class="font-medium">{contractSummary.executionMode}</span></p>
+                    <p>Mode: <span class="font-medium">{getExecutionModeLabel(contractSummary.executionMode)}</span></p>
                     <p>Tools: <span class="font-medium">{contractSummary.tools.join(", ")}</span></p>
-                    <p>Surface: <span class="font-medium">{contractSummary.resultSurface}</span></p>
+                    <p>Surface: <span class="font-medium">{getResultSurfaceLabel(contractSummary.resultSurface)}</span></p>
                 </div>
+                <p class="mt-3 text-xs leading-5 text-text-muted">{resultSurfaceNarrative}</p>
+            </div>
+
+            <div class="rounded-xl border p-5 {runtimeNarrative.tone}">
+                <div class="text-[11px] uppercase tracking-[0.2em] opacity-80">Runtime Intent</div>
+                <div class="mt-3 text-sm font-semibold">{runtimeNarrative.title}</div>
+                <p class="mt-2 text-sm leading-6">{runtimeNarrative.body}</p>
             </div>
 
             <div class="rounded-xl border border-accent-primary/10 bg-accent-primary/5 p-5">
                 <div class="text-[11px] uppercase tracking-[0.2em] text-accent-primary/80">Next Practical Step</div>
                 <p class="mt-3 text-sm leading-6 text-text-primary">
-                    بعد از ذخیره draft، این contract به `GlobalChat` و `BFF` می‌رسد تا agent انتخاب‌شده به capability واقعی خودش وصل شود، نه فقط به مسیر deploy پیش‌فرض.
+                    بعد از ذخیره draft، این contract به `GlobalChat` و `BFF` می‌رسد تا agent انتخاب‌شده با capability واقعی خودش اجرا شود و failure یا empty state هم با copy روشن‌تری دیده شود.
                 </p>
                 <div class="mt-4 flex flex-wrap gap-2">
                     <Button variant="outline" class="gap-2" onclick={openBuilder}>
@@ -557,6 +617,14 @@
                                     <div class="mt-1 text-[11px] text-text-muted">
                                         {agent.type} · {agent.status}
                                     </div>
+                                    <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
+                                        <span class="rounded-full border border-accent-primary/20 bg-accent-primary/10 px-2 py-0.5 text-accent-primary">
+                                            {getCapabilityLabel(getAgentConfig(agent).capability ?? "workflow_insight")}
+                                        </span>
+                                        <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-text-muted">
+                                            {getResultSurfaceLabel(getAgentConfig(agent).resultSurface ?? "global_chat")}
+                                        </span>
+                                    </div>
                                     <div class="mt-2 line-clamp-2 text-xs text-text-muted">
                                         {agent.description || "No description"}
                                     </div>
@@ -584,11 +652,19 @@
                         این صفحه الان کار واقعی انجام می‌دهد: draft را ذخیره و دوباره قابل‌ویرایش می‌کند.
                     </div>
                     <div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-                        قدم بعدی Day 3 این است که draft agent با execution mode و tool مشخص به `GlobalChat` و `BFF` وصل شود.
+                        این draft حالا باید با execution mode روشن به `GlobalChat` برود و نتیجه‌اش به‌صورت user-facing دیده شود، نه فقط debug metadata.
                     </div>
                     {#if selectedDraft}
                         <div class="rounded-xl border border-accent-primary/10 bg-accent-primary/5 p-4 text-text-primary">
                             draft انتخاب‌شده: <span class="font-semibold">{selectedDraft.name}</span>
+                            <div class="mt-2 text-xs text-text-muted">
+                                {getCapabilityLabel(getAgentConfig(selectedDraft).capability ?? "workflow_insight")}
+                                ·
+                                {getExecutionModeLabel(
+                                    getAgentConfig(selectedDraft).executionMode ??
+                                        "read_only_workflow_insight",
+                                )}
+                            </div>
                         </div>
                     {/if}
                 </div>

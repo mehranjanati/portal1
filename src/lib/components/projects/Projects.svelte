@@ -3,10 +3,45 @@
     import Card from "$lib/components/ui/Card.svelte";
     import Button from "$lib/components/ui/Button.svelte";
     import { agentsStore } from "$lib/stores/agents";
-    import type { Agent } from "$lib/types";
+    import type { Agent, AgentCapability, AgentConfig, AgentExecutionMode, AgentResultSurface } from "$lib/types";
     import { ArrowRight, Bot, Plus } from "lucide-svelte";
 
     let agents = $state<Agent[]>([]);
+    let selectedAgentId = $state<string | null>(null);
+
+    function getAgentConfig(agent: Agent): AgentConfig {
+        return agent.config ?? {};
+    }
+
+    function getCapabilityLabel(capability: AgentCapability | undefined) {
+        return capability === "deploy_website" ? "Deploy Website" : "Workflow Insight";
+    }
+
+    function getExecutionModeLabel(executionMode: AgentExecutionMode | undefined) {
+        return executionMode === "deploy_workflow"
+            ? "Deploy Workflow"
+            : "Read-Only Insight";
+    }
+
+    function getResultSurfaceLabel(resultSurface: AgentResultSurface | undefined) {
+        switch (resultSurface) {
+            case "foundry":
+                return "Foundry";
+            case "projects":
+                return "Projects";
+            default:
+                return "Global Chat";
+        }
+    }
+
+    function getRuntimeSummary(agent: Agent) {
+        const config = getAgentConfig(agent);
+        if (config.capability === "deploy_website") {
+            return "برای compatibility نگه داشته شده و خارج از use case اصلی MVP است.";
+        }
+
+        return "این draft برای insight read-only از workflowها در GlobalChat آماده شده است.";
+    }
 
     function goToFoundry(agentId?: string) {
         agentsStore.selectAgent(agentId ?? null);
@@ -20,6 +55,7 @@
             agents = [...state.agents].sort(
                 (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
             );
+            selectedAgentId = state.selectedAgent?.id ?? null;
         });
     });
 </script>
@@ -55,8 +91,9 @@
     {:else}
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {#each agents as agent (agent.id)}
+                {@const config = getAgentConfig(agent)}
                 <Card
-                    class="group relative cursor-pointer p-6 transition-colors hover:border-accent-primary/30"
+                    class="group relative cursor-pointer p-6 transition-colors hover:border-accent-primary/30 {selectedAgentId === agent.id ? 'border-accent-primary/30 bg-accent-primary/5' : ''}"
                     onclick={() => goToFoundry(agent.id)}
                 >
                     <div class="absolute right-0 top-0 p-3 opacity-0 transition-opacity group-hover:opacity-100">
@@ -76,10 +113,28 @@
                     <p class="mt-2 line-clamp-3 text-sm text-text-muted">
                         {agent.description || "No description yet."}
                     </p>
+                    <div class="mt-4 flex flex-wrap gap-2 text-[11px]">
+                        <span class="rounded-full border border-accent-primary/20 bg-accent-primary/10 px-2 py-1 text-accent-primary">
+                            {getCapabilityLabel(config.capability)}
+                        </span>
+                        <span class="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-text-muted">
+                            {getExecutionModeLabel(config.executionMode)}
+                        </span>
+                        <span class="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-text-muted">
+                            {getResultSurfaceLabel(config.resultSurface)}
+                        </span>
+                    </div>
+                    <p class="mt-3 text-xs leading-5 text-text-muted">
+                        {getRuntimeSummary(agent)}
+                    </p>
                     <div class="mt-4 border-t border-white/5 pt-4 text-xs text-text-muted">
                         <div class="flex items-center justify-between">
                             <span>Status</span>
                             <span>{agent.status}</span>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between">
+                            <span>Selected</span>
+                            <span>{selectedAgentId === agent.id ? "Active Draft" : "Inactive"}</span>
                         </div>
                         <div class="mt-2 flex items-center justify-between">
                             <span>Updated</span>
